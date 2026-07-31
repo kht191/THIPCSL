@@ -1,9 +1,10 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
 > **Tạo lần đầu:** 2026-07-31
-> **Cập nhật gần nhất:** 2026-07-31 — Module Quản lý Quyền + Chi tiết kỹ thuật + Roadmap
+> **Cập nhật gần nhất:** 2026-07-31 — Audit phân quyền + Sửa 2 lỗi CRITICAL + Thêm permissionMode
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
-> **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án mà không cần phân tích lại toàn bộ codebase.
+> **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án.
+> **Quy ước:** Mỗi khi hoàn thành một task, cập nhật trạng thái mới nhất vào file này.
 
 ---
 
@@ -94,14 +95,14 @@ User ──< Result >── Exam ──< ExamSession
    Question ──< Topic (cây phân cấp: parentId tự tham chiếu)
 ```
 
-- **User**: id, username (unique), password_hash, full_name, department, role (ADMIN/PROCTOR/CANDIDATE), is_active, field, timestamps
+- **User**: id, username (unique), password_hash, full_name, department, role (ADMIN/PROCTOR/CANDIDATE), is_active, permissionMode (ROLE/CUSTOM — mặc định ROLE), field, timestamps
 - **Question**: id, content (Text), options (JSON Text), correct_answer, category, topicId (FK → Topic, optional)
 - **Topic**: id, name, parentId (self-ref FK, cascade delete), isActive, order, timestamps
 - **Exam**: id, title, duration (phút), max_attempts, max_violations, question_ids (Text JSON array), allowed_users (Text JSON array), status, pass_score, type (OFFICIAL/PRACTICE/TWO_PART), creatorId, settings (Text JSON), practiceSourceId (self-ref FK)
 - **ExamSession**: id, name, startTime, endTime, status
 - **Result**: id, user_id (FK), exam_id (FK), session_id (FK optional), score, is_passed, is_printed, status (IN_PROGRESS/COMPLETED), details (Text JSON: {answers, questionOrder, optionsOrder, twoPartScore}), started_at, submitted_at, session_token (UUID), is_locked
-- **Permission**: id, key (UNIQUE, VD: "users.view"), name, group_name, description — 14 quyền trong 5 nhóm
-- **UserPermission**: user_id (FK→User) + permission_id (FK→Permission) — composite PK. Nếu user có bản ghi → override mode; nếu không → fallback về role defaults
+- **Permission**: id, key (UNIQUE, VD: "users.view"), name, group_name, description — **15 quyền** trong 5 nhóm (14 chức năng + 1 quyền đặc biệt `users.permissions` để quản lý phân quyền)
+- **UserPermission**: user_id (FK→User) + permission_id (FK→Permission) — composite PK. Nếu `user.permissionMode === 'CUSTOM'` → dùng danh sách này (có thể rỗng = không có quyền). Nếu `'ROLE'` → fallback về role defaults.
 
 ### Quy chuẩn Code
 - **TypeScript strict mode**: bắt buộc
@@ -192,25 +193,33 @@ User ──< Result >── Exam ──< ExamSession
 
 #### Vừa hoàn thành hôm nay:
 - [x] **Module 6: Quản lý Quyền Người dùng** — toàn bộ hệ thống permission-based access control
-  - Database: 2 bảng mới (`Permission`, `UserPermission`), 14 quyền seed
+  - Database: 2 bảng mới (`Permission`, `UserPermission`), **15 quyền** seed
   - `lib/permissions.ts`: `hasPermission()`, `getUserPermissions()`, `requirePermission()`
   - 34 API routes được bảo vệ (vá lỗ hổng auth cũ)
   - Frontend: tab "Phân quyền" trong user edit, permission-based menu & buttons
   - `npm run build`: thành công, không lỗi TypeScript
-- [x] Cập nhật `AI_CONTEXT.md` chi tiết cho AI/Agent tương lai
+- [x] **Audit bảo mật toàn diện** module phân quyền — báo cáo tại `AUDIT_PERMISSION.md`
+  - Phát hiện 2 lỗi CRITICAL + 5 lỗi trung bình + 3 lỗi thấp
+  - 34/34 API routes đã được verify có `requirePermission` — 0 route thiếu
+- [x] **Sửa 2 lỗi CRITICAL**:
+  - 🔴 **#1 Override/Fallback**: Thêm `permissionMode` (ROLE|CUSTOM) vào User model — CUSTOM rỗng giờ lưu đúng thay vì rơi về ROLE defaults
+  - 🔴 **#2 Thiếu key**: Thêm `users.permissions` key riêng cho API phân quyền (trước trộn với `users.edit`)
+- [x] Cập nhật `AI_CONTEXT.md` chi tiết cho AI/Agent tương lai + quy ước cập nhật sau mỗi task
 
 #### Đang hoạt động ổn định:
 - [x] Hệ thống đang vận hành thực tế tại Công ty Điện lực Sơn La
 - [x] PostgreSQL ổn định, backup/restore hoạt động
 - [x] Tất cả 6 modules hoàn chỉnh, không có bug nghiêm trọng
+- [x] Permission system: 15 quyền, CUSTOM/ROLE mode rõ ràng, 34 API routes được bảo vệ
 
 ### 🟡 Cần làm tiếp theo (Prioritized Roadmap)
 
-#### Ưu tiên CAO — Củng cố hệ thống:
+#### Ưu tiên CAO — Bảo mật & Ổn định:
+- [ ] **Wrap admin pages với RoleGuard** — hiện tại gõ URL trực tiếp vẫn render trang (dù API chặn data)
+- [ ] **Chống tự khóa admin cuối cùng** — Admin có thể tự hủy quyền của mình
+- [ ] **Middleware role-check cho `/api/admin/*`** — giảm tải DB query không cần thiết
 - [ ] **Rate Limiting** cho API (đặc biệt `/api/auth/login` chống brute-force)
 - [ ] **Audit Log**: ghi lại ai đã cấp/thu hồi quyền, ai đã sửa/xóa user, ai đã mở khóa bài thi
-- [ ] **Tự động khóa tài khoản** sau N lần đăng nhập sai
-- [ ] **Kiểm tra `is_active` trong middleware** (hiện tại user bị khóa vẫn có token hợp lệ)
 
 #### Ưu tiên TRUNG BÌNH — Cải thiện trải nghiệm:
 - [ ] **Unit Test** với Vitest/Jest cho `lib/permissions.ts`, `lib/auth.ts`, `lib/exam-types.ts`
@@ -228,10 +237,13 @@ User ──< Result >── Exam ──< ExamSession
 
 ### 🔴 Nợ kỹ thuật (Technical Debt)
 - [ ] `is_active` flag không được kiểm tra trong middleware và hầu hết API routes
+- [ ] Admin có thể tự khóa quyền của chính mình (chưa chặn "last admin")
+- [ ] Trang admin chưa wrap với `RoleGuard` — gõ URL trực tiếp vẫn render trang (dù API chặn data)
 - [ ] Một số API response trả về tiếng Việt, một số tiếng Anh — cần nhất quán
 - [ ] `next-env.d.ts` bị gitignored nhưng một số môi trường cần nó
 - [ ] Không có health check endpoint (`/api/health`)
 - [ ] `prisma.$transaction` có thể gây lock khi nhiều user cùng thi — cần theo dõi
+- [ ] Permission `*.manage` còn thô (gộp view/create/edit/delete) — tương lai nên tách nhỏ hơn
 
 ---
 
@@ -381,7 +393,7 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 
 ### 7.2 Hệ thống phân quyền (Permission System)
 
-#### Bảng đầy đủ 14 quyền:
+#### Bảng đầy đủ 15 quyền:
 | Key | Tên hiển thị | Nhóm | Mô tả |
 |:---|:---|:---|:---|
 | `users.view` | Xem danh sách người dùng | Người dùng | Xem danh sách và thông tin người dùng |
@@ -389,6 +401,7 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 | `users.edit` | Chỉnh sửa người dùng | Người dùng | Sửa thông tin, vai trò, trạng thái, khóa/mở khóa |
 | `users.delete` | Xóa người dùng | Người dùng | Xóa tài khoản người dùng |
 | `users.import_export` | Import/Export người dùng | Người dùng | Import Excel và xuất Excel danh sách user |
+| `users.permissions` | Quản lý phân quyền | Người dùng | Xem và chỉnh sửa phân quyền của người dùng |
 | `questions.manage` | Quản lý câu hỏi | Câu hỏi & Chủ đề | Tạo, sửa, xóa, import câu hỏi |
 | `topics.manage` | Quản lý chủ đề | Câu hỏi & Chủ đề | Tạo, sửa, xóa, import, sắp xếp cây chủ đề |
 | `exams.manage` | Quản lý đề thi | Đề thi & Ca thi | Tạo, sửa, xóa đề thi, cấu hình ma trận, gán user |
@@ -401,18 +414,21 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 
 #### Role defaults:
 ```typescript
-ADMIN:    [TẤT CẢ 14 quyền]
+ADMIN:    [TẤT CẢ 15 quyền]
 PROCTOR:  ['monitor.view', 'results.view', 'results.print_export', 'exam.unlock', 'statistics.view']
 CANDIDATE:[]
 ```
 
-#### Logic override:
+#### Logic permissionMode (ROLE vs CUSTOM):
 ```
-if (UserPermission có bản ghi cho user này)
-    → Dùng chính xác danh sách đó (override mode)
-else
-    → Dùng ROLE_DEFAULT_PERMISSIONS[user.role] (fallback mode)
+User.permissionMode === 'CUSTOM'
+    → Dùng chính xác danh sách UserPermission (có thể rỗng = không có quyền admin nào)
+User.permissionMode === 'ROLE' (default)
+    → Dùng ROLE_DEFAULT_PERMISSIONS[user.role] (role defaults)
 ```
+- `setUserPermissions()` → tự động set `permissionMode = 'CUSTOM'`
+- `clearUserPermissions()` ("Khôi phục theo vai trò") → set `permissionMode = 'ROLE'` + xóa UserPermission
+- **Quan trọng:** CUSTOM rỗng ≠ ROLE — đây là 2 trạng thái khác nhau. CUSTOM rỗng = user không có quyền admin nào.
 
 "Khôi phục theo vai trò" = xóa hết `UserPermission` → quay về fallback mode.
 
