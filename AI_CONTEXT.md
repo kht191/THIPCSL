@@ -1,7 +1,7 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
 > **Tạo lần đầu:** 2026-07-31
-> **Cập nhật gần nhất:** 2026-07-31 — Audit phân quyền + Sửa 2 lỗi CRITICAL + Thêm permissionMode
+> **Cập nhật gần nhất:** 2026-07-31 — Sửa 2 bug: Import Excel chủ đề cha/con + Sửa nhanh câu hỏi thiếu đáp án
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án.
 > **Quy ước:** Mỗi khi hoàn thành một task, cập nhật trạng thái mới nhất vào file này.
@@ -205,6 +205,10 @@ User ──< Result >── Exam ──< ExamSession
   - 🔴 **#1 Override/Fallback**: Thêm `permissionMode` (ROLE|CUSTOM) vào User model — CUSTOM rỗng giờ lưu đúng thay vì rơi về ROLE defaults
   - 🔴 **#2 Thiếu key**: Thêm `users.permissions` key riêng cho API phân quyền (trước trộn với `users.edit`)
 - [x] Cập nhật `AI_CONTEXT.md` chi tiết cho AI/Agent tương lai + quy ước cập nhật sau mỗi task
+- [x] **Sửa 2 bug Ngân hàng câu hỏi**:
+  - 🔧 **Bug #1: Import Excel không phân biệt chủ đề cha/con** — `resolveTopicId()` trong import route không kiểm tra topic đích có children không → câu hỏi bị gán vào chủ đề cha. Fix: thêm `_count.children` check, nếu > 0 thì báo lỗi kèm danh sách chủ đề con.
+  - 🔧 **Bug #2: Sửa nhanh không hiển thị đáp án đúng** — `startEdit()` trong inline edit dùng `JSON.parse` trực tiếp → lỗi với `correct_answer` dạng chuỗi trần `"A"` (từ import Excel). Fix: dùng `parseCorrectAnswerValue()` thay `JSON.parse`, hàm này xử lý được mọi định dạng.
+  - 🔧 **Serialize nhất quán**: `serializeCorrectAnswer()` giờ luôn lưu JSON array `'["A"]'` thay vì chuỗi trần khi 1 đáp án.
 
 #### Đang hoạt động ổn định:
 - [x] Hệ thống đang vận hành thực tế tại Công ty Điện lực Sơn La

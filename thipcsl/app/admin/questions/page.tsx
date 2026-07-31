@@ -4,6 +4,7 @@ import { useState, useEffect, Fragment, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Pagination from '@/components/Pagination';
+import { parseCorrectAnswerValue, getOptionLabel } from '@/lib/question-options';
 
 export default function QuestionManagement() {
     const router = useRouter();
@@ -237,10 +238,8 @@ export default function QuestionManagement() {
             const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
             setEditOptions(opts || {});
         } catch { setEditOptions({}); }
-        try {
-            const correct = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
-            setEditCorrectAnswer(Array.isArray(correct) ? correct : [correct]);
-        } catch { setEditCorrectAnswer([]); }
+        // Use parseCorrectAnswerValue to handle all storage formats (plain string, JSON array, etc.)
+        setEditCorrectAnswer(parseCorrectAnswerValue(q.correct_answer));
     };
 
     const cancelEdit = () => {

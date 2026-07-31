@@ -72,8 +72,7 @@ export function parseCorrectAnswerValue(raw: unknown) {
 
 export function serializeCorrectAnswer(raw: unknown) {
     const values = parseCorrectAnswerValue(raw);
-    if (values.length > 1) return JSON.stringify(values);
-    return values[0] || '';
+    return JSON.stringify(values);
 }
 
 function optionLabelToNumber(label: string) {

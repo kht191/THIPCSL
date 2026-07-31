@@ -55,23 +55,39 @@ function extractOptions(row: Record<string, unknown>) {
 }
 
 async function resolveTopicId(topicName: string, parentTopicName: string) {
-    let topicId = null;
+    let topicId: string | null = null;
+    let error: string | null = null;
+
     if (topicName) {
         const topics = await prisma.topic.findMany({
             where: { name: String(topicName) },
-            include: { parent: true }
+            include: { parent: true, _count: { select: { children: true } } }
         });
 
         if (topics.length > 0) {
+            let matched: typeof topics[0] | undefined;
+
             if (parentTopicName) {
-                const matched = topics.find(t => t.parent?.name === String(parentTopicName));
-                if (matched) topicId = matched.id;
+                matched = topics.find(t => t.parent?.name === String(parentTopicName));
             } else {
-                topicId = topics[0].id;
+                matched = topics[0];
+            }
+
+            if (matched) {
+                // Validate: topic must be a leaf (no children)
+                if (matched._count.children > 0) {
+                    const childNames = await prisma.topic.findMany({
+                        where: { parentId: matched.id },
+                        select: { name: true }
+                    });
+                    error = `Chu de "${topicName}" co ${matched._count.children} chu de con (${childNames.map(c => c.name).join(', ')}). Vui long chon chu de con cu the thay vi chu de cha.`;
+                } else {
+                    topicId = matched.id;
+                }
             }
         }
     }
-    return topicId;
+    return { topicId, error };
 }
 
 export async function POST(request: Request) {
@@ -133,7 +149,15 @@ export async function POST(request: Request) {
                 continue;
             }
 
-            const topicId = await resolveTopicId(normalizeText(topicName), normalizeText(parentTopicName));
+            const { topicId, error: topicError } = await resolveTopicId(normalizeText(topicName), normalizeText(parentTopicName));
+            if (topicError) {
+                issues.push({
+                    row: rowNumber,
+                    type: 'error',
+                    message: topicError
+                });
+                continue;
+            }
             if (topicName && !topicId) {
                 issues.push({
                     row: rowNumber,
