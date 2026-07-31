@@ -27,6 +27,8 @@ export const PERMISSION_DEFINITIONS = [
   { key: 'exam.unlock',        name: 'Mở khóa bài thi',             group: 'Giám sát & Kết quả', description: 'Mở khóa bài thi cho thí sinh bị khóa do vi phạm' },
   // Nhóm: Thống kê
   { key: 'statistics.view',    name: 'Xem thống kê',                group: 'Thống kê',         description: 'Xem biểu đồ thống kê, phân bố điểm, báo cáo tổng quan' },
+  // Quyền đặc biệt
+  { key: 'users.permissions',  name: 'Quản lý phân quyền',          group: 'Người dùng',       description: 'Xem và chỉnh sửa phân quyền của người dùng' },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_DEFINITIONS)[number]['key'];
@@ -61,6 +63,7 @@ export async function hasPermission(userId: string, permissionKey: string): Prom
     where: { id: userId },
     select: {
       role: true,
+      permissionMode: true,
       userPermissions: {
         include: { permission: { select: { key: true } } },
       },
@@ -69,14 +72,14 @@ export async function hasPermission(userId: string, permissionKey: string): Prom
 
   if (!userWithPerms) return false;
 
-  // Override mode: explicit permissions set by admin
-  if (userWithPerms.userPermissions.length > 0) {
+  // CUSTOM mode: use explicit permissions (may be empty — means no permissions)
+  if (userWithPerms.permissionMode === 'CUSTOM') {
     return userWithPerms.userPermissions.some(
       up => up.permission.key === permissionKey
     );
   }
 
-  // Fallback mode: role-based defaults
+  // ROLE mode: fall back to role-based defaults
   const defaults = ROLE_DEFAULT_PERMISSIONS[userWithPerms.role] || [];
   return defaults.includes(permissionKey);
 }
@@ -89,6 +92,7 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
     where: { id: userId },
     select: {
       role: true,
+      permissionMode: true,
       userPermissions: {
         include: { permission: { select: { key: true } } },
       },
@@ -97,12 +101,12 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
 
   if (!userWithPerms) return [];
 
-  // Override mode: explicit permissions
-  if (userWithPerms.userPermissions.length > 0) {
+  // CUSTOM mode: use explicit permissions (may be empty)
+  if (userWithPerms.permissionMode === 'CUSTOM') {
     return userWithPerms.userPermissions.map(up => up.permission.key);
   }
 
-  // Fallback mode: role-based defaults
+  // ROLE mode: fall back to role-based defaults
   return ROLE_DEFAULT_PERMISSIONS[userWithPerms.role] || [];
 }
 
@@ -131,6 +135,10 @@ export async function setUserPermissions(userId: string, permissionKeys: string[
         data: { user_id: userId, permission_id: p.id },
       })
     ),
+    prisma.user.update({
+      where: { id: userId },
+      data: { permissionMode: 'CUSTOM' },
+    }),
   ]);
 }
 
@@ -138,7 +146,13 @@ export async function setUserPermissions(userId: string, permissionKeys: string[
  * Remove all explicit permissions (restore role defaults).
  */
 export async function clearUserPermissions(userId: string): Promise<void> {
-  await prisma.userPermission.deleteMany({ where: { user_id: userId } });
+  await prisma.$transaction([
+    prisma.userPermission.deleteMany({ where: { user_id: userId } }),
+    prisma.user.update({
+      where: { id: userId },
+      data: { permissionMode: 'ROLE' },
+    }),
+  ]);
 }
 
 // ============================================================

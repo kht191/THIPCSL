@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server';
-import { requirePermission, getUserPermissions, setUserPermissions, clearUserPermissions, hasExplicitPermissions, ROLE_DEFAULT_PERMISSIONS } from '@/lib/permissions';
+import { prisma } from '@/lib/prisma';
+import { requirePermission, getUserPermissions, setUserPermissions, clearUserPermissions, ROLE_DEFAULT_PERMISSIONS } from '@/lib/permissions';
 
 // GET /api/admin/users/[id]/permissions
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const userIdOrErr = await requirePermission('users.view');
+    const userIdOrErr = await requirePermission('users.permissions');
     if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
     const { id } = await params;
 
     try {
         const permissionKeys = await getUserPermissions(id);
-        const explicit = await hasExplicitPermissions(id);
+        const userWithMode = await prisma.user.findUnique({ where: { id }, select: { permissionMode: true } });
+        const explicit = userWithMode?.permissionMode === 'CUSTOM';
 
         return NextResponse.json({
             permissionKeys,
@@ -30,7 +32,7 @@ export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const userIdOrErr = await requirePermission('users.edit');
+    const userIdOrErr = await requirePermission('users.permissions');
     if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
     const { id } = await params;

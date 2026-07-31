@@ -66,6 +66,7 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                 { key: 'users.edit', name: 'Chỉnh sửa người dùng' },
                 { key: 'users.delete', name: 'Xóa người dùng' },
                 { key: 'users.import_export', name: 'Import/Export người dùng' },
+                { key: 'users.permissions', name: 'Quản lý phân quyền' },
             ]
         },
         {

@@ -18,6 +18,7 @@ const PERMISSION_DEFINITIONS = [
   { key: 'results.print_export', name: 'In/Xuất kết quả',           group: 'Giám sát & Kết quả' },
   { key: 'exam.unlock',        name: 'Mở khóa bài thi',             group: 'Giám sát & Kết quả' },
   { key: 'statistics.view',    name: 'Xem thống kê',                group: 'Thống kê' },
+  { key: 'users.permissions',  name: 'Quản lý phân quyền',          group: 'Người dùng' },
 ]
 
 async function main() {

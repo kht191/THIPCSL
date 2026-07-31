@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id            String           @id @default(uuid()) @db.Uuid
-  username      String           @unique
-  password_hash String
-  full_name     String
-  department    String
-  role          String
-  is_active     Boolean          @default(true)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  field         String?
-  results       Result[]
+  id              String           @id @default(uuid()) @db.Uuid
+  username        String           @unique
+  password_hash   String
+  full_name       String
+  department      String
+  role            String
+  is_active       Boolean          @default(true)
+  permissionMode  String           @default("ROLE")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  field           String?
+  results         Result[]
   userPermissions UserPermission[]
 
   @@index([username])
