@@ -1,28 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
-
-async function checkAdminRole() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return false;
-    try {
-        const secret = new TextEncoder().encode(JWT_SECRET);
-        const { payload } = await jwtVerify(token, secret);
-        return payload.role === 'ADMIN';
-    } catch (e) {
-        return false;
-    }
-}
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET() {
     try {
-        if (!(await checkAdminRole())) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const userIdOrErr = await requirePermission('users.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
         // Fetch distinct departments and fields
         const departments = await prisma.user.findMany({

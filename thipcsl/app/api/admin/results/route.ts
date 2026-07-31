@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('results.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         const examId = searchParams.get('examId');
         const userId = searchParams.get('userId');
@@ -76,6 +79,8 @@ export async function GET(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('results.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

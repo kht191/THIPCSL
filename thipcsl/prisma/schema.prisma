@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid()) @db.Uuid
-  username      String   @unique
+  id            String           @id @default(uuid()) @db.Uuid
+  username      String           @unique
   password_hash String
   full_name     String
   department    String
   role          String
-  is_active     Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  is_active     Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   field         String?
   results       Result[]
+  userPermissions UserPermission[]
 
   @@index([username])
   @@index([department])
@@ -124,4 +125,24 @@ model Result {
   @@index([status])
   @@index([started_at])
   @@index([is_passed])
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @unique
+  name            String
+  group_name      String
+  description     String           @default("")
+  userPermissions UserPermission[]
+
+  @@index([group_name])
+}
+
+model UserPermission {
+  user_id       String     @db.Uuid
+  permission_id String     @db.Uuid
+  user          User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, permission_id])
 }

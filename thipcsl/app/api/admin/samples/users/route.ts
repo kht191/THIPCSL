@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET() {
+    const userIdOrErr = await requirePermission('users.view');
+    if (typeof userIdOrErr !== 'string') return userIdOrErr;
     const data = [
         { Username: 'user1', Pass: '123456', Name: 'Nguyen Van A', Dept: 'IT', Field: 'Software' },
         { Username: 'user2', Pass: '123456', Name: 'Tran Thi B', Dept: 'HR', Field: 'Recruitment' },

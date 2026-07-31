@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "backups", ".next", "scripts/cleanup-*.ts", "scripts/check-*.ts", "scripts/debug-*.ts", "scripts/test-*.ts", "scripts/dedupe-*.ts", "scripts/export-sqlite-data.ts", "scripts/import-postgresql-data.ts", "add-*.ts", "check-*.ts", "clean-*.ts", "cleanup-*.ts", "count-*.ts", "create-*.ts", "create_*.ts", "debug-*.ts", "debug_*.ts", "delete-*.ts", "disable-*.ts", "end-*.ts", "export-*.ts", "find-*.ts", "fix-*.ts", "fix-*.js", "list-*.ts", "migrate-*.ts", "quick-*.ts", "recalc-*.ts", "recalc-*.js", "recreate-*.ts", "remove-*.ts", "reproduce-*.ts", "restore-*.ts", "show-*.ts", "test-*.ts", "update-*.ts", "verify-*.ts", "load-test.js", "*.bat", "*.sh", "*.sql"]
 }

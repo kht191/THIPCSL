@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         const activeOnly = searchParams.get('activeOnly') === 'true';
 
@@ -32,6 +35,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { name, parentId, isActive } = body;
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { parseCorrectAnswerValue, serializeCorrectAnswer, sortOptionKeys } from '@/lib/question-options';
+import { requirePermission } from '@/lib/permissions';
 
 type ImportIssue = { row: number; message: string; type: 'error' | 'warning' };
 type ImportRow = Record<string, unknown>;
@@ -75,6 +76,9 @@ async function resolveTopicId(topicName: string, parentTopicName: string) {
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('questions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const validateOnly = normalizeText(formData.get('validateOnly')).toLowerCase() === 'true';

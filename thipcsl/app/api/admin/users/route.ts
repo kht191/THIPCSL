@@ -1,29 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
-
-async function checkAdminRole() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return false;
-    try {
-        const secret = new TextEncoder().encode(JWT_SECRET);
-        const { payload } = await jwtVerify(token, secret);
-        return payload.role === 'ADMIN';
-    } catch (e) {
-        return false;
-    }
-}
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
-        if (!(await checkAdminRole())) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const userIdOrErr = await requirePermission('users.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search')?.trim();
@@ -78,9 +61,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        if (!(await checkAdminRole())) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const userIdOrErr = await requirePermission('users.create');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
         const body = await request.json();
         const { username, password, full_name, department, field, role } = body;
@@ -119,9 +101,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        if (!(await checkAdminRole())) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const userIdOrErr = await requirePermission('users.delete');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
         const body = await request.json();
         const { ids } = body;
@@ -149,9 +130,8 @@ export async function DELETE(request: Request) {
 
 export async function PUT(request: Request) {
     try {
-        if (!(await checkAdminRole())) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const userIdOrErr = await requirePermission('users.edit');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
         const body = await request.json();
         const { ids, department, field } = body;

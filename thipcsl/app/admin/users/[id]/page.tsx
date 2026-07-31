@@ -47,7 +47,128 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
     const [assignedExamIds, setAssignedExamIds] = useState<string[]>([]);
     const [results, setResults] = useState<ResultRow[]>([]);
     const [examFilter, setExamFilter] = useState('');
-    const [activeTab, setActiveTab] = useState<'info' | 'exams' | 'results'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'exams' | 'results' | 'permissions'>('info');
+
+    // Permissions state
+    const [permissionKeys, setPermissionKeys] = useState<string[]>([]);
+    const [hasExplicitPermissions, setHasExplicitPermissions] = useState(false);
+    const [permSearch, setPermSearch] = useState('');
+    const [savingPermissions, setSavingPermissions] = useState(false);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Permission definitions (mirrored from lib for client)
+    const PERM_GROUPS = [
+        {
+            name: 'Người dùng',
+            perms: [
+                { key: 'users.view', name: 'Xem danh sách người dùng' },
+                { key: 'users.create', name: 'Tạo người dùng mới' },
+                { key: 'users.edit', name: 'Chỉnh sửa người dùng' },
+                { key: 'users.delete', name: 'Xóa người dùng' },
+                { key: 'users.import_export', name: 'Import/Export người dùng' },
+            ]
+        },
+        {
+            name: 'Câu hỏi & Chủ đề',
+            perms: [
+                { key: 'questions.manage', name: 'Quản lý câu hỏi' },
+                { key: 'topics.manage', name: 'Quản lý chủ đề' },
+            ]
+        },
+        {
+            name: 'Đề thi & Ca thi',
+            perms: [
+                { key: 'exams.manage', name: 'Quản lý đề thi' },
+                { key: 'sessions.manage', name: 'Quản lý ca thi' },
+            ]
+        },
+        {
+            name: 'Giám sát & Kết quả',
+            perms: [
+                { key: 'monitor.view', name: 'Xem giám sát thi' },
+                { key: 'results.view', name: 'Xem kết quả thi' },
+                { key: 'results.print_export', name: 'In/Xuất kết quả' },
+                { key: 'exam.unlock', name: 'Mở khóa bài thi' },
+            ]
+        },
+        {
+            name: 'Thống kê',
+            perms: [
+                { key: 'statistics.view', name: 'Xem thống kê' },
+            ]
+        },
+    ];
+
+    const fetchPermissions = async () => {
+        try {
+            const res = await fetch(`/api/admin/users/${id}/permissions`);
+            if (res.ok) {
+                const data = await res.json();
+                setPermissionKeys(data.permissionKeys || []);
+                setHasExplicitPermissions(data.hasExplicitPermissions);
+            }
+        } catch (error) {
+            console.error('Error fetching permissions', error);
+        } finally {
+            setPermissionsLoaded(true);
+        }
+    };
+
+    const togglePermission = (key: string) => {
+        setPermissionKeys(prev =>
+            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+        );
+    };
+
+    const selectAllPermissions = () => {
+        const allKeys = PERM_GROUPS.flatMap(g => g.perms.map(p => p.key));
+        setPermissionKeys(allKeys);
+    };
+
+    const restoreRoleDefaults = async () => {
+        setSavingPermissions(true);
+        try {
+            const res = await fetch(`/api/admin/users/${id}/permissions`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ restoreRole: true }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPermissionKeys(data.permissionKeys);
+                setHasExplicitPermissions(false);
+                alert(data.message || 'Đã khôi phục quyền theo vai trò mặc định');
+            } else {
+                alert('Lỗi khi khôi phục quyền');
+            }
+        } catch {
+            alert('Lỗi kết nối');
+        } finally {
+            setSavingPermissions(false);
+        }
+    };
+
+    const savePermissions = async () => {
+        setSavingPermissions(true);
+        try {
+            const res = await fetch(`/api/admin/users/${id}/permissions`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ permissionKeys }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setHasExplicitPermissions(data.hasExplicitPermissions);
+                alert(data.message || 'Đã lưu quyền thành công');
+            } else {
+                alert('Lỗi khi lưu quyền');
+            }
+        } catch {
+            alert('Lỗi kết nối');
+        } finally {
+            setSavingPermissions(false);
+        }
+    };
 
     const deleteResult = async (resultId: string) => {
         if (!confirm('Xóa kết quả thi này? Người dùng sẽ được thi lại nếu còn lượt.')) return;
@@ -214,10 +335,16 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                     { key: 'info', label: 'Thông tin' },
                     { key: 'exams', label: `Đề thi (${assignedCount})` },
                     { key: 'results', label: `Kết quả (${results.length})` },
+                    { key: 'permissions', label: 'Phân quyền' },
                 ].map(tab => (
                     <button
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
+                        onClick={() => {
+                            setActiveTab(tab.key as any);
+                            if (tab.key === 'permissions' && !permissionsLoaded) {
+                                fetchPermissions();
+                            }
+                        }}
                         className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.key
                                 ? 'border-blue-600 text-blue-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -353,71 +480,95 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                     </div>
                 )}
 
-                {/* Tab: Kết quả */}
-                {activeTab === 'results' && (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Đề thi</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ca thi</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Điểm</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Kết quả</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nộp lúc</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">TT</th>
-                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {results.map(r => (
-                                    <tr key={r.id} className="hover:bg-gray-50">
-                                        <td className="px-3 py-2 text-sm text-gray-900 break-words max-w-xs">{r.examTitle}</td>
-                                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
-                                            {r.sessionName || (r.examType === 'PRACTICE' ? 'Ôn tập' : '-')}
-                                        </td>
-                                        <td className="px-3 py-2 text-center whitespace-nowrap">
-                                            <span className={`text-sm font-semibold ${r.isPassed ? 'text-green-600' : 'text-red-600'}`}>
-                                                {r.score.toFixed(1)}
-                                            </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-center whitespace-nowrap">
-                                            <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {r.isPassed ? 'Đạt' : 'Không đạt'}
-                                            </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
-                                            {new Date(r.submittedAt).toLocaleString('vi-VN')}
-                                        </td>
-                                        <td className="px-3 py-2 text-center whitespace-nowrap">
-                                            {r.status === 'IN_PROGRESS' ? (
-                                                <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">Đang làm</span>
-                                            ) : r.isPrinted ? (
-                                                <span className="text-xs text-green-600">✓ Đã in</span>
-                                            ) : (
-                                                <span className="text-xs text-gray-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-3 py-2 text-right whitespace-nowrap">
-                                            <Link
-                                                href={`/admin/results/${r.id}`}
-                                                className="text-blue-600 hover:text-blue-900 text-xs mr-3"
-                                            >
-                                                Chi tiết
-                                            </Link>
-                                            <button
-                                                onClick={() => deleteResult(r.id)}
-                                                className="text-red-600 hover:text-red-900 text-xs"
-                                                title="Xóa để thi lại"
-                                            >
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {results.length === 0 && (
-                            <div className="p-4 text-center text-gray-500 text-sm">Chưa có kết quả thi nào.</div>
+                {/* Tab: Phân quyền */}
+                {activeTab === 'permissions' && (
+                    <div>
+                        {!permissionsLoaded ? (
+                            <div className="text-center py-8 text-gray-500">Đang tải...</div>
+                        ) : (
+                            <>
+                                <div className="flex flex-wrap items-center gap-3 mb-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Tìm kiếm quyền..."
+                                        value={permSearch}
+                                        onChange={(e) => setPermSearch(e.target.value)}
+                                        className="border p-2 rounded w-64 text-sm text-black"
+                                    />
+                                    <button
+                                        onClick={selectAllPermissions}
+                                        className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200 text-gray-700"
+                                    >
+                                        Chọn tất cả
+                                    </button>
+                                    <button
+                                        onClick={() => setPermissionKeys([])}
+                                        className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200 text-gray-700"
+                                    >
+                                        Bỏ chọn tất cả
+                                    </button>
+                                    {hasExplicitPermissions && (
+                                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                                            ⚠️ Đang dùng quyền tùy chỉnh (ghi đè vai trò mặc định)
+                                        </span>
+                                    )}
+                                </div>
+
+                                {PERM_GROUPS.map(group => {
+                                    const filteredPerms = group.perms.filter(p =>
+                                        !permSearch ||
+                                        p.name.toLowerCase().includes(permSearch.toLowerCase()) ||
+                                        p.key.toLowerCase().includes(permSearch.toLowerCase())
+                                    );
+                                    if (filteredPerms.length === 0) return null;
+                                    return (
+                                        <div key={group.name} className="mb-4 border rounded p-4">
+                                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                                {group.name}
+                                                <span className="text-xs text-gray-400 font-normal">
+                                                    ({filteredPerms.filter(p => permissionKeys.includes(p.key)).length}/{filteredPerms.length})
+                                                </span>
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {filteredPerms.map(p => (
+                                                    <label
+                                                        key={p.key}
+                                                        className="flex items-start gap-2 text-sm cursor-pointer p-1.5 hover:bg-gray-50 rounded"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={permissionKeys.includes(p.key)}
+                                                            onChange={() => togglePermission(p.key)}
+                                                            className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        />
+                                                        <div>
+                                                            <span className="text-gray-800">{p.name}</span>
+                                                            <span className="text-xs text-gray-400 ml-2 font-mono">{p.key}</span>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                <div className="flex gap-3 mt-4 pt-4 border-t">
+                                    <button
+                                        onClick={restoreRoleDefaults}
+                                        disabled={savingPermissions}
+                                        className="px-4 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+                                    >
+                                        {savingPermissions ? 'Đang xử lý...' : '🔄 Khôi phục theo vai trò'}
+                                    </button>
+                                    <button
+                                        onClick={savePermissions}
+                                        disabled={savingPermissions}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400"
+                                    >
+                                        {savingPermissions ? 'Đang lưu...' : '💾 Lưu quyền'}
+                                    </button>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

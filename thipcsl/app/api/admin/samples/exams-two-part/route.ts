@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET() {
+    const userIdOrErr = await requirePermission('users.view');
+    if (typeof userIdOrErr !== 'string') return userIdOrErr;
     const data = [
         {
             'Tên đề thi': 'Đề thi 2 phần Kỹ thuật',

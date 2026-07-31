@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('sessions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         // const examId = searchParams.get('examId'); // TODO: Filter by examId if needed, requires different query for many-to-many
 
@@ -47,6 +50,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('sessions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { name, examIds, startTime, endTime } = body;
 
@@ -75,6 +80,8 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('sessions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { id, name, examIds, startTime, endTime, status } = body;
 
@@ -104,6 +111,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('sessions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

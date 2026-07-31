@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function PUT(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { items } = body; // Array of { id, order }
 

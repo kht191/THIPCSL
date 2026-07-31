@@ -30,10 +30,27 @@ export default function UserManagement() {
     const [targetField, setTargetField] = useState('');
     const [isClearField, setIsClearField] = useState(false);
 
+    // Permissions
+    const [permissions, setPermissions] = useState<string[]>([]);
+    const can = (perm: string) => permissions.includes(perm);
+
     useEffect(() => {
         fetchUsers();
         fetchFilters();
+        fetchPermissions();
     }, []);
+
+    const fetchPermissions = async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                setPermissions(data.permissions || []);
+            }
+        } catch (error) {
+            console.error('Error fetching permissions', error);
+        }
+    };
 
     // Debounce search
     useEffect(() => {
@@ -311,50 +328,50 @@ export default function UserManagement() {
                 <div className="flex flex-wrap gap-2">
                     {selectedUsers.length > 0 && (
                         <>
-                            <button
-                                onClick={() => bulkToggleActive(true)}
-                                className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 whitespace-nowrap"
-                            >
-                                Mở khóa ({selectedUsers.length})
-                            </button>
-                            <button
-                                onClick={() => bulkToggleActive(false)}
-                                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 whitespace-nowrap"
-                            >
-                                Khóa ({selectedUsers.length})
-                            </button>
-                            <button
-                                onClick={handleExport}
-                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 whitespace-nowrap"
-                            >
-                                Xuất Excel ({selectedUsers.length})
-                            </button>
-                            <button
-                                onClick={() => setShowTransferModal(true)}
-                                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 whitespace-nowrap"
-                            >
-                                Chuyển phòng ban ({selectedUsers.length})
-                            </button>
-                            <button
-                                onClick={() => setShowFieldModal(true)}
-                                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 whitespace-nowrap"
-                            >
-                                Cập nhật Lĩnh vực ({selectedUsers.length})
-                            </button>
-                            <button
-                                onClick={handleBulkDelete}
-                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 whitespace-nowrap"
-                            >
-                                Xóa ({selectedUsers.length})
-                            </button>
+                            {can('users.edit') && (
+                                <>
+                                    <button onClick={() => bulkToggleActive(true)}
+                                        className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 whitespace-nowrap">
+                                        Mở khóa ({selectedUsers.length})
+                                    </button>
+                                    <button onClick={() => bulkToggleActive(false)}
+                                        className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 whitespace-nowrap">
+                                        Khóa ({selectedUsers.length})
+                                    </button>
+                                </>
+                            )}
+                            {can('users.import_export') && (
+                                <button onClick={handleExport}
+                                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 whitespace-nowrap">
+                                    Xuất Excel ({selectedUsers.length})
+                                </button>
+                            )}
+                            {can('users.edit') && (
+                                <>
+                                    <button onClick={() => setShowTransferModal(true)}
+                                        className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 whitespace-nowrap">
+                                        Chuyển phòng ban ({selectedUsers.length})
+                                    </button>
+                                    <button onClick={() => setShowFieldModal(true)}
+                                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 whitespace-nowrap">
+                                        Cập nhật Lĩnh vực ({selectedUsers.length})
+                                    </button>
+                                </>
+                            )}
+                            {can('users.delete') && (
+                                <button onClick={handleBulkDelete}
+                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 whitespace-nowrap">
+                                    Xóa ({selectedUsers.length})
+                                </button>
+                            )}
                         </>
                     )}
-                    <Link
-                        href="/admin/users/create"
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 whitespace-nowrap"
-                    >
-                        + Thêm nhân viên
-                    </Link>
+                    {can('users.create') && (
+                        <Link href="/admin/users/create"
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 whitespace-nowrap">
+                            + Thêm nhân viên
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -418,6 +435,7 @@ export default function UserManagement() {
                 </button>
             </div>
 
+            {can('users.import_export') && (
             <div className="mb-6 bg-white p-4 rounded shadow">
                 <h2 className="text-lg font-semibold mb-2 text-black">Import / Cập nhật từ Excel</h2>
                 <input
@@ -443,11 +461,13 @@ export default function UserManagement() {
                     * Nếu Username đã tồn tại, thông tin sẽ được cập nhật. Pass chỉ cập nhật nếu có nhập.
                 </p>
             </div>
+            )}
 
             <div className="bg-white rounded shadow overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            {(can('users.edit') || can('users.delete')) && (
                             <th className="px-6 py-3 text-left">
                                 <input
                                     type="checkbox"
@@ -456,18 +476,24 @@ export default function UserManagement() {
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                             </th>
+                            )}
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tài khoản</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phòng ban</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lĩnh vực</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                            {can('users.edit') && (
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">TT</th>
+                            )}
+                            {(can('users.edit') || can('users.delete')) && (
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {users.map((user) => (
                             <tr key={user.id} className={selectedUsers.includes(user.id) ? 'bg-blue-50' : ''}>
+                                {(can('users.edit') || can('users.delete')) && (
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <input
                                         type="checkbox"
@@ -476,11 +502,13 @@ export default function UserManagement() {
                                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
                                 </td>
+                                )}
                                 <td className="px-6 py-4 whitespace-nowrap text-black">{user.username}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-black">{user.full_name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-black">{user.department}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-black">{user.field}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-black">{user.role}</td>
+                                {can('users.edit') && (
                                 <td className="px-6 py-4 text-center">
                                     <button
                                         onClick={() => toggleUserActive(user.id, user.is_active !== false)}
@@ -494,20 +522,27 @@ export default function UserManagement() {
                                         {user.is_active !== false ? 'ON' : 'OFF'}
                                     </button>
                                 </td>
+                                )}
+                                {(can('users.edit') || can('users.delete')) && (
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    {can('users.edit') && (
                                     <Link
                                         href={`/admin/users/${user.id}`}
                                         className="text-blue-600 hover:text-blue-900 mr-4"
                                     >
                                         Sửa
                                     </Link>
+                                    )}
+                                    {can('users.delete') && (
                                     <button
                                         onClick={() => handleDelete(user.id)}
                                         className="text-red-600 hover:text-red-900"
                                     >
                                         Xóa
                                     </button>
+                                    )}
                                 </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getUserPermissions } from '@/lib/permissions';
 
 export async function GET() {
     const cookieStore = await cookies();
@@ -33,7 +34,12 @@ export async function GET() {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        return NextResponse.json(user);
+        const permissions = await getUserPermissions(user.id);
+
+        return NextResponse.json({
+            ...user,
+            permissions,
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

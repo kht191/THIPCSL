@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const body = await request.json();
         const { name, parentId, isActive } = body;
@@ -47,6 +50,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
 
         const topicIdsToDelete: string[] = [id];

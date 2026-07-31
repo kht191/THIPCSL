@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { compactOptions, parseCorrectAnswerValue } from '@/lib/question-options';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('questions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const question = await prisma.question.findUnique({
             where: { id },
@@ -21,6 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('questions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const body = await request.json();
         const { content, options, correct_answer, category, topicId } = body;
@@ -60,6 +65,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('questions.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         await prisma.question.delete({
             where: { id },

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { sortOptionKeys } from '@/lib/question-options';
+import { requirePermission } from '@/lib/permissions';
 
 async function getDescendantTopicIds(topicId: string): Promise<string[]> {
     const ids: string[] = [topicId];
@@ -21,6 +22,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const { id } = await params;
         const { searchParams } = new URL(request.url);
         const includeChildren = searchParams.get('includeChildren') !== 'false';

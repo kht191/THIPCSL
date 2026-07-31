@@ -33,14 +33,11 @@ export async function middleware(request: NextRequest) {
         const secret = new TextEncoder().encode(JWT_SECRET);
         const { payload } = await jwtVerify(token, secret);
 
-        // Check role for /admin
+        // Check role for /admin — ADMIN or PROCTOR required
+        // Permission-based menu filtering is done in the admin layout
         if (pathname.startsWith('/admin')) {
             if (payload.role !== 'ADMIN' && payload.role !== 'PROCTOR') {
                 return NextResponse.redirect(new URL('/login', request.url));
-            }
-            // If PROCTOR tries to access the main admin dashboard (User Management), redirect to Monitor
-            if (payload.role === 'PROCTOR' && pathname === '/admin') {
-                return NextResponse.redirect(new URL('/admin/monitor', request.url));
             }
         }
 

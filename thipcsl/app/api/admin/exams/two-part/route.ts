@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 // POST: Tạo đề thi 2 phần (TWO_PART)
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const {
             title,

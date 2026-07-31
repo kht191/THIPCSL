@@ -1,23 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { requirePermission } from '@/lib/permissions';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exam.unlock');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const { id } = await params; // resultId
-
-        const cookieStore = await cookies();
-        const token = cookieStore.get('token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const decoded: any = verifyToken(token);
-        if (!decoded || !decoded.id || (decoded.role !== 'ADMIN' && decoded.role !== 'PROCTOR')) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
 
         await prisma.result.update({
             where: { id },

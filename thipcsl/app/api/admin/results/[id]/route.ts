@@ -1,28 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
+        const userIdOrErr = await requirePermission('results.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
 
-        // Check Role
-        const cookieStore = await cookies();
-        const token = cookieStore.get('token')?.value;
-        let role = '';
-        if (token) {
-            try {
-                const secret = new TextEncoder().encode(JWT_SECRET);
-                const { payload } = await jwtVerify(token, secret);
-                role = payload.role as string;
-            } catch (e) { }
-        }
+        const { id } = await params;
 
         const result = await prisma.result.findUnique({
             where: { id },
@@ -73,7 +61,7 @@ export async function GET(
             console.error("Error parsing question IDs", e);
         }
 
-        return NextResponse.json({ result, questions, viewerRole: role });
+        return NextResponse.json({ result, questions, viewerRole: 'admin' });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch result details' }, { status: 500 });
     }
@@ -84,27 +72,10 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const userIdOrErr = await requirePermission('results.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const { id } = await params;
-
-        // Check admin authentication
-        const cookieStore = await cookies();
-        const token = cookieStore.get('token')?.value;
-        if (!token) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        let role = '';
-        try {
-            const secret = new TextEncoder().encode(JWT_SECRET);
-            const { payload } = await jwtVerify(token, secret);
-            role = payload.role as string;
-        } catch (e) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        if (role !== 'ADMIN' && role !== 'PROCTOR') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
 
         const body = await request.json();
         const { is_printed } = body;
@@ -130,24 +101,10 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const userIdOrErr = await requirePermission('results.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const { id } = await params;
-
-        const cookieStore = await cookies();
-        const token = cookieStore.get('token')?.value;
-        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        let role = '';
-        try {
-            const secret = new TextEncoder().encode(JWT_SECRET);
-            const { payload } = await jwtVerify(token, secret);
-            role = payload.role as string;
-        } catch (e) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        if (role !== 'ADMIN' && role !== 'PROCTOR') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
 
         await prisma.result.delete({ where: { id } });
         return NextResponse.json({ success: true });

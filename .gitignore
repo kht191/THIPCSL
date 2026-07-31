@@ -67,6 +67,15 @@ node_modules/
 /thipcsl/verify-*.ts
 /thipcsl/load-test.js
 
+# Debug scripts inside scripts/ directory
+/thipcsl/scripts/check-*.ts
+/thipcsl/scripts/debug-*.ts
+/thipcsl/scripts/test-*.ts
+/thipcsl/scripts/cleanup-*.ts
+/thipcsl/scripts/dedupe-*.ts
+/thipcsl/scripts/export-sqlite-data.ts
+/thipcsl/scripts/import-postgresql-data.ts
+
 # Catch-all: any other .ts/.js files at thipcsl/ root are debug scripts
 # (middleware.ts is the only legitimate .ts at root — explicitly included)
 /thipcsl/*.ts

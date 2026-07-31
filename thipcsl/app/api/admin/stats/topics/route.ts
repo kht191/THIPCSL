@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET() {
     try {
+        const userIdOrErr = await requirePermission('statistics.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const groups = await prisma.question.groupBy({
             by: ['topicId'],
             _count: {

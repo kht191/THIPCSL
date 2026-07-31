@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 // GET: Lấy chi tiết đề thi 2 phần
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const exam = await prisma.exam.findUnique({
             where: { id },
@@ -40,6 +43,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 // PUT: Cập nhật đề thi 2 phần
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const body = await request.json();
         const {
@@ -163,6 +168,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // DELETE: Xóa đề thi 2 phần
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
 
         // Xóa results trước

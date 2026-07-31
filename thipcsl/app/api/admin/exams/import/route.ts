@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
+import { requirePermission } from '@/lib/permissions';
 
 function normalizeText(value: unknown): string {
     return String(value ?? '').trim();
@@ -288,6 +289,9 @@ async function resolveMatrices(topics: TopicEntry[]): Promise<{
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const validateOnly = formData.get('validateOnly') === 'true';

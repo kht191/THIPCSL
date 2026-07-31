@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
+import { requirePermission } from '@/lib/permissions';
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('users.import_export');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { ids } = body;
 

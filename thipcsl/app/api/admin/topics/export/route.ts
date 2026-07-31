@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { sortOptionKeys } from '@/lib/question-options';
+import { requirePermission } from '@/lib/permissions';
 
 async function getDescendantTopicIds(topicId: string): Promise<string[]> {
     const ids: string[] = [topicId];
@@ -18,6 +19,9 @@ async function getDescendantTopicIds(topicId: string): Promise<string[]> {
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('topics.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+
         const body = await request.json();
         const { topicIds } = body as { topicIds: string[] };
 

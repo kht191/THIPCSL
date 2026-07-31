@@ -5,6 +5,7 @@ import LogoutButton from './LogoutButton';
 import MobileSidebar from '@/components/MobileSidebar';
 
 import { prisma } from '@/lib/prisma';
+import { getUserPermissions } from '@/lib/permissions';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
@@ -12,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     let user = null;
+    let permissions: string[] = [];
 
     if (token) {
         try {
@@ -21,13 +23,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 where: { id: payload.id as string },
                 select: { full_name: true, department: true, role: true }
             });
+            if (user) {
+                permissions = await getUserPermissions(payload.id as string);
+            }
         } catch (e) { }
     }
 
     const role = user?.role || '';
     const isAdmin = role === 'ADMIN';
     const isProctor = role === 'PROCTOR';
-    const canAccessMonitoring = isAdmin || isProctor;
+    const can = (perm: string) => permissions.includes(perm);
 
     return (
         <div className="flex min-h-screen">
@@ -49,24 +54,32 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     )}
                 </div>
                 <nav className="space-y-2">
-                    {isAdmin && (
-                        <>
-                            <Link href="/admin" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Người dùng</Link>
-                            <Link href="/admin/topics" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Chủ đề</Link>
-                            <Link href="/admin/questions" className="block py-2 px-4 hover:bg-gray-700 rounded">Ngân hàng câu hỏi</Link>
-                            <Link href="/admin/exams" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Đề thi</Link>
-                            <Link href="/admin/sessions" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Ca thi</Link>
-                        </>
+                    {can('users.view') && (
+                        <Link href="/admin" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Người dùng</Link>
+                    )}
+                    {can('topics.manage') && (
+                        <Link href="/admin/topics" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Chủ đề</Link>
+                    )}
+                    {can('questions.manage') && (
+                        <Link href="/admin/questions" className="block py-2 px-4 hover:bg-gray-700 rounded">Ngân hàng câu hỏi</Link>
+                    )}
+                    {can('exams.manage') && (
+                        <Link href="/admin/exams" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Đề thi</Link>
+                    )}
+                    {can('sessions.manage') && (
+                        <Link href="/admin/sessions" className="block py-2 px-4 hover:bg-gray-700 rounded">Quản lý Ca thi</Link>
                     )}
 
-                    {canAccessMonitoring && (
-                        <>
-                            <Link href="/admin/monitor" className="block py-2 px-4 hover:bg-gray-700 rounded text-yellow-300">
-                                {isProctor && '⭐ '}Giám sát thi
-                            </Link>
-                            <Link href="/admin/results" className="block py-2 px-4 hover:bg-gray-700 rounded">Kết quả thi</Link>
-                            <Link href="/admin/statistics" className="block py-2 px-4 hover:bg-gray-700 rounded text-green-400">Thống kê</Link>
-                        </>
+                    {can('monitor.view') && (
+                        <Link href="/admin/monitor" className="block py-2 px-4 hover:bg-gray-700 rounded text-yellow-300">
+                            {isProctor && '⭐ '}Giám sát thi
+                        </Link>
+                    )}
+                    {can('results.view') && (
+                        <Link href="/admin/results" className="block py-2 px-4 hover:bg-gray-700 rounded">Kết quả thi</Link>
+                    )}
+                    {can('statistics.view') && (
+                        <Link href="/admin/statistics" className="block py-2 px-4 hover:bg-gray-700 rounded text-green-400">Thống kê</Link>
                     )}
 
                     <LogoutButton />

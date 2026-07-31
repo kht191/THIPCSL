@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const exam = await prisma.exam.findUnique({
             where: { id },
@@ -20,6 +23,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
         const body = await request.json();
         const { title, duration, status, allowed_users, matrix, pass_score, max_violations,
@@ -127,6 +132,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { id } = await params;
 
         // Find and delete the public practice exam and all user forks

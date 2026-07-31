@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
@@ -42,6 +45,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('exams.manage');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const body = await request.json();
         const { title, duration, matrix, allowed_users, pass_score, type, part1Matrix, part2Matrix, part1PassPercent, part2PassPercent } = body;
 

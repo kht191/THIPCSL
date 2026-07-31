@@ -1,6 +1,6 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
-> **Tự động sinh ngày:** 2026-07-31
+> **Cập nhật gần nhất:** 2026-07-31 (thêm Module Quản lý Quyền Người dùng)
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án mà không cần phân tích lại toàn bộ codebase.
 
 ---
@@ -66,11 +66,12 @@ thipcsl/
 ├── lib/
 │   ├── auth.ts                   # JWT sign/verify + bcrypt hash/compare
 │   ├── prisma.ts                 # PrismaClient singleton
+│   ├── permissions.ts            # Hệ thống phân quyền (14 quyền, role defaults, hasPermission, requirePermission)
 │   ├── exam-helper.ts            # autoSubmitExam (hết giờ tự nộp)
 │   ├── exam-types.ts             # Định nghĩa TWO_PART exam type + scoring
 │   └── question-options.ts       # Chuẩn hóa đáp án A,B,C,D,... và parse đáp án đúng
 ├── prisma/
-│   ├── schema.prisma             # PostgreSQL schema (6 models: User, Question, Topic, Exam, ExamSession, Result)
+│   ├── schema.prisma             # PostgreSQL schema (8 models: User, Question, Topic, Exam, ExamSession, Result, Permission, UserPermission)
 │   ├── seed.ts                   # Seed data: tạo tài khoản admin mặc định
 │   └── migrations/               # Migration history
 ├── scripts/                      # Các script tiện ích (backup, restore, migrate)
@@ -97,6 +98,8 @@ User ──< Result >── Exam ──< ExamSession
 - **Exam**: id, title, duration (phút), max_attempts, max_violations, question_ids (Text JSON array), allowed_users (Text JSON array), status, pass_score, type (OFFICIAL/PRACTICE/TWO_PART), creatorId, settings (Text JSON), practiceSourceId (self-ref FK)
 - **ExamSession**: id, name, startTime, endTime, status
 - **Result**: id, user_id (FK), exam_id (FK), session_id (FK optional), score, is_passed, is_printed, status (IN_PROGRESS/COMPLETED), details (Text JSON: {answers, questionOrder, optionsOrder, twoPartScore}), started_at, submitted_at, session_token (UUID), is_locked
+- **Permission**: id, key (UNIQUE, VD: "users.view"), name, group_name, description — 14 quyền trong 5 nhóm
+- **UserPermission**: user_id (FK→User) + permission_id (FK→Permission) — composite PK. Nếu user có bản ghi → override mode; nếu không → fallback về role defaults
 
 ### Quy chuẩn Code
 - **TypeScript strict mode**: bắt buộc
@@ -160,9 +163,22 @@ User ──< Result >── Exam ──< ExamSession
 - [x] Admin Statistics: biểu đồ Recharts (phân bố điểm, theo đơn vị, theo đề thi)
 - [x] Export báo cáo thống kê Excel
 
+#### Module 6: Quản lý Quyền Người dùng 🆕
+- [x] 14 quyền chia 5 nhóm: Người dùng (5), Câu hỏi & Chủ đề (2), Đề thi & Ca thi (2), Giám sát & Kết quả (4), Thống kê (1)
+- [x] Role defaults: ADMIN (tất cả), PROCTOR (5 quyền giám sát/kết quả/thống kê), CANDIDATE (không có quyền admin)
+- [x] Override mode: Admin có thể cấp/thu hồi từng quyền riêng cho mỗi người dùng qua tab "Phân quyền"
+- [x] Giao diện phân quyền: grouped checkboxes, tìm kiếm, chọn tất cả, khôi phục theo vai trò
+- [x] `requirePermission(key)` bảo vệ tất cả 34 admin API routes (sửa lỗ hổng bảo mật cũ)
+- [x] Middleware bỏ redirect PROCTOR→monitor, để permission-based layout xử lý
+- [x] Menu sidebar hiển thị theo permission thay vì hardcoded role
+- [x] Nút/thao tác ẩn/hiện theo permission (`can('users.create')`, ...)
+- [x] `api/auth/me` trả về thêm `permissions[]`
+- [x] `RoleGuard` component hỗ trợ `requiredPermission` prop
+
 #### Hạ tầng & Bảo mật
 - [x] PostgreSQL migration từ SQLite (đã hoàn tất)
 - [x] Middleware bảo vệ route (/admin, /exam, /api/admin, /api/exam)
+- [x] **Tất cả API admin routes được bảo vệ bởi `requirePermission()`** — vá lỗ hổng auth cũ
 - [x] Maintenance mode (biến môi trường MAINTENANCE_MODE)
 - [x] Backup/Restore database script
 - [x] Kiểm tra session conflict (409 Conflict khi bị takeover)
@@ -171,11 +187,9 @@ User ──< Result >── Exam ──< ExamSession
 - [x] Pagination component dùng chung
 
 ### Đang làm dở / Cần chú ý ⚠️
-- [ ] Một số file test scripts (`check-*.ts`, `debug-*.ts`, `create-*.ts`) nằm rải rác ở root — là script dùng 1 lần để debug/gỡ lỗi dữ liệu thực tế, cần dọn dẹp
-- [ ] `node_modules` đang được commit cùng source (có trong thư mục `.next` cũ)
+- [ ] Một số file test scripts (`check-*.ts`, `debug-*.ts`, `create-*.ts`) nằm rải rác ở root — là script dùng 1 lần, đã gitignored + excluded khỏi tsconfig
 - [ ] API chưa có rate limiting
 - [ ] Chưa có Unit Test / Integration Test chính thức (chỉ có script test thủ công)
-- [ ] File `thipcsl.zip` (~5.8MB) nằm trong source code
 
 ---
 
@@ -283,10 +297,21 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 
 1. **Đây là hệ thống đang vận hành thực tế** tại Công ty Điện lực Sơn La, không phải dự án mẫu. Cần cẩn trọng khi thay đổi logic.
 2. **Đã migrate từ SQLite → PostgreSQL**: Schema dùng UUID, `@db.Uuid`, `@db.Text`, `@db.DoublePrecision`. Không dùng SQLite-specific features.
-3. **Hệ thống 3 role**: ADMIN (toàn quyền), PROCTOR (chỉ giám sát + xem kết quả + thống kê), CANDIDATE (chỉ thi và ôn tập).
-4. **Exam type**: OFFICIAL (thi thật, giới hạn attempts, anti-cheat), PRACTICE (ôn tập, không giới hạn, không anti-cheat), TWO_PART (2 phần riêng biệt, phải đạt cả 2).
-5. **Shuffle questions & options**: Mỗi lần bắt đầu thi, câu hỏi và đáp án được xáo trộn và lưu vĩnh viễn vào `Result.details`. Không shuffle lại khi F5.
-6. **Session token**: Mỗi lần tạo Result IN_PROGRESS sẽ có `session_token` UUID để phát hiện thi nhiều tab/thiết bị.
-7. **Anti-cheat**: Yêu cầu Fullscreen API, phát hiện tab hidden + window blur, chặn chuột phải/copy/paste. Mobile được miễn fullscreen.
-8. **Multi-answer questions**: Đáp án đúng có thể là mảng (VD: `["A","C"]`), chấm điểm bằng so sánh Set.
-9. **Các script TS ở root**: Hầu hết là script tạm dùng 1 lần để debug dữ liệu thực tế. Có thể bỏ qua hoặc dọn dẹp.
+3. **Hệ thống 3 role + Permission-based quyền**:
+   - Role: ADMIN, PROCTOR, CANDIDATE (giữ nguyên làm nhóm quyền mặc định)
+   - Permission: 14 quyền chi tiết trong 5 nhóm, lưu trong bảng `Permission` + `UserPermission`
+   - Nếu user có bản ghi `UserPermission` → override mode (dùng đúng danh sách đó)
+   - Nếu không có → fallback về role defaults
+   - ADMIN mặc định: tất cả 14 quyền. PROCTOR: 5 quyền (monitor.view, results.view, results.print_export, exam.unlock, statistics.view). CANDIDATE: không có quyền admin nào
+4. **Cách kiểm tra quyền trong API**: Dùng `requirePermission(key)` từ `lib/permissions.ts`
+   ```typescript
+   const userIdOrErr = await requirePermission('users.view');
+   if (typeof userIdOrErr !== 'string') return userIdOrErr; // trả về 401/403
+   ```
+5. **Cách kiểm tra quyền ở Client**: Gọi `/api/auth/me` → lấy `data.permissions[]` → dùng `can(key)` helper
+6. **Exam type**: OFFICIAL (thi thật, giới hạn attempts, anti-cheat), PRACTICE (ôn tập, không giới hạn, không anti-cheat), TWO_PART (2 phần riêng biệt, phải đạt cả 2).
+7. **Shuffle questions & options**: Mỗi lần bắt đầu thi, câu hỏi và đáp án được xáo trộn và lưu vĩnh viễn vào `Result.details`. Không shuffle lại khi F5.
+8. **Session token**: Mỗi lần tạo Result IN_PROGRESS sẽ có `session_token` UUID để phát hiện thi nhiều tab/thiết bị.
+9. **Anti-cheat**: Yêu cầu Fullscreen API, phát hiện tab hidden + window blur, chặn chuột phải/copy/paste. Mobile được miễn fullscreen.
+10. **Multi-answer questions**: Đáp án đúng có thể là mảng (VD: `["A","C"]`), chấm điểm bằng so sánh Set.
+11. **Các script TS ở root**: Hầu hết là script tạm dùng 1 lần, đã gitignored + excluded khỏi tsconfig. Không cần quan tâm khi build.

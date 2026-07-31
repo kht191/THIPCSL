@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { autoSubmitExam } from '@/lib/exam-helper';
+import { requirePermission } from '@/lib/permissions';
 
 export async function GET(request: Request) {
     try {
+        const userIdOrErr = await requirePermission('monitor.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
         const results = await prisma.result.findMany({
             where: {
                 status: 'IN_PROGRESS'

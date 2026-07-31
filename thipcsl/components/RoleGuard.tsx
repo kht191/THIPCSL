@@ -5,34 +5,56 @@ import { useRouter } from 'next/navigation';
 
 interface RoleGuardProps {
     children: React.ReactNode;
-    allowedRoles: string[];
+    allowedRoles?: string[];
+    requiredPermission?: string;
     redirectTo?: string;
 }
 
-export default function RoleGuard({ children, allowedRoles, redirectTo = '/admin/monitor' }: RoleGuardProps) {
+export default function RoleGuard({ children, allowedRoles, requiredPermission, redirectTo = '/admin/monitor' }: RoleGuardProps) {
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        checkRole();
+        checkAccess();
     }, []);
 
-    const checkRole = async () => {
+    const checkAccess = async () => {
         try {
             const res = await fetch('/api/auth/me');
             if (res.ok) {
                 const data = await res.json();
-                if (allowedRoles.includes(data.role)) {
-                    setIsAuthorized(true);
-                } else {
-                    router.replace(redirectTo);
+
+                // Check by role (legacy)
+                if (allowedRoles && allowedRoles.length > 0) {
+                    if (allowedRoles.includes(data.role)) {
+                        setIsAuthorized(true);
+                    } else {
+                        router.replace(redirectTo);
+                    }
+                    setIsLoading(false);
+                    return;
                 }
+
+                // Check by permission (new)
+                if (requiredPermission) {
+                    const perms: string[] = data.permissions || [];
+                    if (perms.includes(requiredPermission)) {
+                        setIsAuthorized(true);
+                    } else {
+                        router.replace(redirectTo);
+                    }
+                    setIsLoading(false);
+                    return;
+                }
+
+                // No check specified — allow
+                setIsAuthorized(true);
             } else {
                 router.replace('/login');
             }
         } catch (error) {
-            console.error('Role check error:', error);
+            console.error('Access check error:', error);
             router.replace('/login');
         } finally {
             setIsLoading(false);
