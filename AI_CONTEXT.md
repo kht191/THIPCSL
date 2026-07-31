@@ -1,6 +1,8 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
-> **Cập nhật gần nhất:** 2026-07-31 (thêm Module Quản lý Quyền Người dùng)
+> **Tạo lần đầu:** 2026-07-31
+> **Cập nhật gần nhất:** 2026-07-31 — Module Quản lý Quyền + Chi tiết kỹ thuật + Roadmap
+> **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án mà không cần phân tích lại toàn bộ codebase.
 
 ---
@@ -186,10 +188,50 @@ User ──< Result >── Exam ──< ExamSession
 - [x] Responsive design (hỗ trợ Mobile + iOS double-tap fix)
 - [x] Pagination component dùng chung
 
-### Đang làm dở / Cần chú ý ⚠️
-- [ ] Một số file test scripts (`check-*.ts`, `debug-*.ts`, `create-*.ts`) nằm rải rác ở root — là script dùng 1 lần, đã gitignored + excluded khỏi tsconfig
-- [ ] API chưa có rate limiting
-- [ ] Chưa có Unit Test / Integration Test chính thức (chỉ có script test thủ công)
+### 🟢 Đang làm dở / Hoạt động gần đây (Cập nhật: 2026-07-31)
+
+#### Vừa hoàn thành hôm nay:
+- [x] **Module 6: Quản lý Quyền Người dùng** — toàn bộ hệ thống permission-based access control
+  - Database: 2 bảng mới (`Permission`, `UserPermission`), 14 quyền seed
+  - `lib/permissions.ts`: `hasPermission()`, `getUserPermissions()`, `requirePermission()`
+  - 34 API routes được bảo vệ (vá lỗ hổng auth cũ)
+  - Frontend: tab "Phân quyền" trong user edit, permission-based menu & buttons
+  - `npm run build`: thành công, không lỗi TypeScript
+- [x] Cập nhật `AI_CONTEXT.md` chi tiết cho AI/Agent tương lai
+
+#### Đang hoạt động ổn định:
+- [x] Hệ thống đang vận hành thực tế tại Công ty Điện lực Sơn La
+- [x] PostgreSQL ổn định, backup/restore hoạt động
+- [x] Tất cả 6 modules hoàn chỉnh, không có bug nghiêm trọng
+
+### 🟡 Cần làm tiếp theo (Prioritized Roadmap)
+
+#### Ưu tiên CAO — Củng cố hệ thống:
+- [ ] **Rate Limiting** cho API (đặc biệt `/api/auth/login` chống brute-force)
+- [ ] **Audit Log**: ghi lại ai đã cấp/thu hồi quyền, ai đã sửa/xóa user, ai đã mở khóa bài thi
+- [ ] **Tự động khóa tài khoản** sau N lần đăng nhập sai
+- [ ] **Kiểm tra `is_active` trong middleware** (hiện tại user bị khóa vẫn có token hợp lệ)
+
+#### Ưu tiên TRUNG BÌNH — Cải thiện trải nghiệm:
+- [ ] **Unit Test** với Vitest/Jest cho `lib/permissions.ts`, `lib/auth.ts`, `lib/exam-types.ts`
+- [ ] **Integration Test** cho API routes (dùng `next-test-api-route-handler`)
+- [ ] **Thông báo đẹp hơn**: thay `alert()` bằng toast notification component
+- [ ] **Dark mode** cho giao diện thi và admin
+- [ ] **Dọn dẹp** ~65 script debug ở root thư mục `thipcsl/` (đã gitignored, nhưng vẫn chiếm disk)
+
+#### Ưu tiên THẤP — Mở rộng:
+- [ ] **Quên mật khẩu / Reset password** cho CANDIDATE
+- [ ] **Lịch sử thay đổi quyền** — xem ai đã sửa quyền của ai, lúc nào
+- [ ] **Dashboard tổng quan** cho Admin (tổng số user, số bài thi hôm nay, tỉ lệ đạt)
+- [ ] **Email notification** khi được gán vào kỳ thi mới
+- [ ] **Multi-language** (hiện tại UI toàn tiếng Việt, có thể thêm EN)
+
+### 🔴 Nợ kỹ thuật (Technical Debt)
+- [ ] `is_active` flag không được kiểm tra trong middleware và hầu hết API routes
+- [ ] Một số API response trả về tiếng Việt, một số tiếng Anh — cần nhất quán
+- [ ] `next-env.d.ts` bị gitignored nhưng một số môi trường cần nó
+- [ ] Không có health check endpoint (`/api/health`)
+- [ ] `prisma.$transaction` có thể gây lock khi nhiều user cùng thi — cần theo dõi
 
 ---
 
