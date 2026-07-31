@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  username      String   @unique
+  password_hash String
+  full_name     String
+  department    String
+  role          String
+  is_active     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  field         String?
+  results       Result[]
+
+  @@index([username])
+  @@index([department])
+  @@index([role])
+}
+
+model Question {
+  id             String   @id @default(uuid()) @db.Uuid
+  content        String   @db.Text
+  options        String   @db.Text
+  correct_answer String
+  category       String
+  topicId        String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  topic          Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  
+  @@index([topicId])
+  @@index([category])
+}
+
+model Topic {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  parentId  String?    @db.Uuid
+  isActive  Boolean    @default(true)
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  questions Question[]
+  parent    Topic?     @relation("TopicHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Topic[]    @relation("TopicHierarchy")
+  
+  @@index([parentId])
+  @@index([isActive])
+  @@index([order])
+}
+
+model Exam {
+  id             String        @id @default(uuid()) @db.Uuid
+  title          String
+  duration       Int
+  max_attempts   Int           @default(1)
+  max_violations Int           @default(3)
+  question_ids   String        @db.Text
+  allowed_users  String        @db.Text
+  status         String
+  pass_score     Float         @default(5.0) @db.DoublePrecision
+  type           String        @default("OFFICIAL")
+  creatorId      String?       @db.Uuid
+  settings       String?       @db.Text
+  practiceSourceId String?     @db.Uuid
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  results        Result[]
+  sessions       ExamSession[] @relation("ExamToExamSession")
+  practiceSource Exam?         @relation("PracticeSource", fields: [practiceSourceId], references: [id], onDelete: SetNull)
+  practiceCopies Exam[]        @relation("PracticeSource")
+  
+  @@index([status])
+  @@index([type])
+  @@index([creatorId])
+  @@index([createdAt])
+}
+
+model ExamSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  startTime DateTime
+  endTime   DateTime
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  results   Result[]
+  exams     Exam[]   @relation("ExamToExamSession")
+  
+  @@index([status])
+  @@index([startTime])
+  @@index([endTime])
+}
+
+model Result {
+  id            String       @id @default(uuid()) @db.Uuid
+  user_id       String       @db.Uuid
+  exam_id       String       @db.Uuid
+  session_id    String?      @db.Uuid
+  score         Float        @db.DoublePrecision
+  is_passed     Boolean      @default(false)
+  is_printed    Boolean      @default(false)
+  status        String       @default("COMPLETED")
+  details       String       @db.Text
+  started_at    DateTime     @default(now())
+  submitted_at  DateTime     @default(now())
+  session_token String?
+  is_locked     Boolean      @default(false)
+  session       ExamSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+  exam          Exam         @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@index([user_id])
+  @@index([exam_id])
+  @@index([session_id])
+  @@index([status])
+  @@index([started_at])
+  @@index([is_passed])
+}

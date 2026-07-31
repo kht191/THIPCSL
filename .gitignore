@@ -1,0 +1,125 @@
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ============================================
+# Build Output
+# ============================================
+/.next/
+/out/
+/build/
+*.tsbuildinfo
+
+# ============================================
+# Environment & Secrets
+# ============================================
+.env*
+!.env.example
+
+# ============================================
+# Database & Backups
+# ============================================
+*.db
+*.db-journal
+/backups/
+/thipcsl/prisma/dev.db
+
+# ============================================
+# Debug & Test Scripts (chứa dữ liệu nội bộ)
+# ============================================
+/thipcsl/add-*.ts
+/thipcsl/check-*.ts
+/thipcsl/clean-*.ts
+/thipcsl/cleanup-*.ts
+/thipcsl/count-*.ts
+/thipcsl/create-*.ts
+/thipcsl/create_*.ts
+/thipcsl/debug-*.ts
+/thipcsl/debug_*.ts
+/thipcsl/debug_*.js
+/thipcsl/delete-*.ts
+/thipcsl/disable-*.ts
+/thipcsl/end-*.ts
+/thipcsl/export-*.ts
+/thipcsl/find-*.ts
+/thipcsl/fix-*.ts
+/thipcsl/fix-*.js
+/thipcsl/list-*.ts
+/thipcsl/migrate-*.ts
+/thipcsl/quick-*.ts
+/thipcsl/recalc-*.ts
+/thipcsl/recalc-*.js
+/thipcsl/recreate-*.ts
+/thipcsl/remove-*.ts
+/thipcsl/reproduce-*.ts
+/thipcsl/restore-*.ts
+/thipcsl/show-*.ts
+/thipcsl/test-*.ts
+/thipcsl/update-*.ts
+/thipcsl/verify-*.ts
+/thipcsl/load-test.js
+
+# Catch-all: any other .ts/.js files at thipcsl/ root are debug scripts
+# (middleware.ts is the only legitimate .ts at root — explicitly included)
+/thipcsl/*.ts
+!/thipcsl/middleware.ts
+/thipcsl/*.js
+
+# ============================================
+# Temporary & Batch Files
+# ============================================
+/thipcsl/*.bat
+/thipcsl/*.sh
+/thipcsl/*.sql
+/thipcsl/last*.txt
+
+# ============================================
+# Archives & Data Files
+# ============================================
+*.zip
+*.tar.gz
+*.rar
+*.xlsx
+*.xls
+*.json.bak
+
+# ============================================
+# IDE & Editor
+# ============================================
+.vs/
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Claude / AI
+# ============================================
+.claude/
+
+# ============================================
+# Misc
+# ============================================
+*.pem
+*.crt
+*.key
+
+# Vercel
+.vercel
+
+# TypeScript
+next-env.d.ts

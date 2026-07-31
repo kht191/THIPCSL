@@ -1,0 +1,11 @@
+{
+    "name": "thipcsl-root",
+    "private": true,
+    "scripts": {
+        "dev": "npm run dev --prefix thipcsl",
+        "build": "npm run build --prefix thipcsl",
+        "start": "npm run start --prefix thipcsl",
+        "lint": "npm run lint --prefix thipcsl",
+        "install-app": "npm install --prefix thipcsl"
+    }
+}
