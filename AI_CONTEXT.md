@@ -239,31 +239,68 @@ User tạo đề ôn tập từ admin (hoặc fork từ đề public)
 
 ## 4. Các API Endpoints quan trọng
 
-| Method | Endpoint | Mô tả | Auth |
+### Admin API (yêu cầu permission tương ứng)
+
+| Method | Endpoint | Permission | Mô tả |
 |:---|:---|:---|:---|
-| POST | `/api/auth/login` | Đăng nhập, trả về JWT cookie | Public |
-| GET | `/api/auth/me` | Lấy thông tin user từ JWT | Token |
-| GET | `/api/admin/users` | Danh sách user (phân trang, filter) | ADMIN |
-| POST | `/api/admin/users/import` | Import Excel users | ADMIN |
-| DELETE | `/api/admin/users` | Xóa hàng loạt user | ADMIN |
-| PUT | `/api/admin/users` | Chuyển phòng ban / cập nhật lĩnh vực hàng loạt | ADMIN |
-| GET | `/api/admin/questions` | Danh sách câu hỏi (phân trang, filter) | ADMIN |
-| POST | `/api/admin/questions/import` | Import Excel câu hỏi | ADMIN |
-| GET | `/api/admin/exams` | Danh sách đề thi | ADMIN |
-| POST | `/api/admin/exams` | Tạo đề thi mới | ADMIN |
-| POST | `/api/admin/exams/two-part` | Tạo đề 2 phần | ADMIN |
-| GET | `/api/admin/topics` | Cây chủ đề | ADMIN |
-| POST | `/api/admin/topics/import` | Import Excel chủ đề | ADMIN |
-| POST | `/api/admin/topics/reorder` | Sắp xếp lại thứ tự chủ đề | ADMIN |
-| GET | `/api/admin/monitor` | Dữ liệu giám sát real-time | ADMIN, PROCTOR |
-| POST | `/api/admin/results/[id]/unlock` | Mở khóa bài thi bị khóa | ADMIN, PROCTOR |
-| GET | `/api/admin/statistics` | Dữ liệu thống kê | ADMIN, PROCTOR |
-| GET | `/api/exam-runner/active` | Danh sách ca thi đang hoạt động cho user | Token |
-| GET | `/api/exam-runner/[id]` | Lấy đề thi để làm (không có đáp án) | Token |
-| POST | `/api/exam-runner/[id]` | Nộp bài thi | Token |
-| POST | `/api/exam-runner/progress` | Đồng bộ tiến độ làm bài | Token |
-| POST | `/api/exam-runner/lock` | Khóa bài thi (từ client khi vi phạm) | Token |
-| GET | `/api/admin/samples/*` | Tải file Excel mẫu | ADMIN |
+| GET | `/api/admin/users` | `users.view` | Danh sách user (phân trang, filter) |
+| POST | `/api/admin/users` | `users.create` | Tạo user mới |
+| PUT | `/api/admin/users` | `users.edit` | Chuyển phòng ban / cập nhật lĩnh vực hàng loạt |
+| DELETE | `/api/admin/users` | `users.delete` | Xóa hàng loạt user |
+| GET | `/api/admin/users/[id]` | `users.view` | Chi tiết user + danh sách đề thi + kết quả |
+| PUT | `/api/admin/users/[id]` | `users.edit` | Cập nhật thông tin user |
+| PATCH | `/api/admin/users/[id]` | `users.edit` | Gán/gỡ đề thi cho user |
+| DELETE | `/api/admin/users/[id]` | `users.delete` | Xóa 1 user |
+| GET | `/api/admin/users/[id]/permissions` | `users.view` | Xem quyền của user |
+| PUT | `/api/admin/users/[id]/permissions` | `users.edit` | Lưu / khôi phục quyền user |
+| POST | `/api/admin/users/import` | `users.import_export` | Import Excel users |
+| POST | `/api/admin/users/export` | `users.import_export` | Export Excel users |
+| PATCH | `/api/admin/users/batch` | `users.edit` | Batch lock/unlock users |
+| GET | `/api/admin/users/filters` | `users.view` | Lấy danh sách phòng ban/lĩnh vực để filter |
+| GET | `/api/admin/questions` | `questions.manage` | Danh sách câu hỏi (phân trang, filter) |
+| POST | `/api/admin/questions` | `questions.manage` | Tạo câu hỏi mới |
+| PUT | `/api/admin/questions/[id]` | `questions.manage` | Sửa câu hỏi |
+| DELETE | `/api/admin/questions/[id]` | `questions.manage` | Xóa câu hỏi |
+| POST | `/api/admin/questions/import` | `questions.manage` | Import Excel câu hỏi |
+| GET/POST/PUT/DELETE | `/api/admin/topics` | `topics.manage` | CRUD chủ đề |
+| POST | `/api/admin/topics/import` | `topics.manage` | Import Excel chủ đề |
+| POST | `/api/admin/topics/reorder` | `topics.manage` | Sắp xếp thứ tự chủ đề |
+| GET | `/api/admin/topics/export` | `topics.manage` | Export Excel chủ đề |
+| GET/POST | `/api/admin/exams` | `exams.manage` | Danh sách / tạo đề thi |
+| GET/PUT/DELETE | `/api/admin/exams/[id]` | `exams.manage` | Chi tiết / sửa / xóa đề thi |
+| POST | `/api/admin/exams/import` | `exams.manage` | Import đề thi |
+| POST | `/api/admin/exams/import-users` | `exams.manage` | Import users vào đề thi |
+| POST | `/api/admin/exams/two-part` | `exams.manage` | Tạo đề 2 phần |
+| GET/PUT | `/api/admin/exams/two-part/[id]` | `exams.manage` | Sửa đề 2 phần |
+| POST | `/api/admin/exams/[id]/publish-practice` | `exams.manage` | Publish đề thành PRACTICE |
+| GET/POST/PUT/DELETE | `/api/admin/sessions` | `sessions.manage` | CRUD ca thi |
+| GET | `/api/admin/monitor` | `monitor.view` | Dữ liệu giám sát real-time |
+| GET/DELETE | `/api/admin/results` | `results.view` | Danh sách / xóa kết quả |
+| GET/PATCH/DELETE | `/api/admin/results/[id]` | `results.view` | Chi tiết / cập nhật in / xóa kết quả |
+| POST | `/api/admin/results/[id]/unlock` | `exam.unlock` | Mở khóa bài thi bị khóa |
+| GET | `/api/admin/statistics` | `statistics.view` | Dữ liệu thống kê |
+| GET | `/api/admin/stats/topics` | `statistics.view` | Thống kê theo chủ đề |
+| GET | `/api/admin/samples/*` | `users.view` | Tải file Excel mẫu |
+
+### User-facing API (chỉ cần token hợp lệ)
+
+| Method | Endpoint | Mô tả |
+|:---|:---|:---|
+| POST | `/api/auth/login` | Đăng nhập — Public |
+| GET | `/api/auth/me` | Lấy thông tin user + permissions[] |
+| GET | `/api/exam-runner/active` | Danh sách ca thi đang hoạt động cho user |
+| GET | `/api/exam-runner/[id]` | Lấy đề thi (KHÔNG có correct_answer) |
+| POST | `/api/exam-runner/[id]` | Nộp bài thi |
+| POST | `/api/exam-runner/progress` | Đồng bộ tiến độ làm bài |
+| POST | `/api/exam-runner/lock` | Khóa bài thi (từ client khi vi phạm) |
+| GET | `/api/exam-runner/results` | Kết quả thi của user hiện tại |
+| GET/POST | `/api/practice` | Danh sách / tạo đề ôn tập |
+| GET/PUT/DELETE | `/api/practice/[id]` | Chi tiết / sửa / xóa đề ôn tập |
+| POST | `/api/practice/[id]/fork` | Fork đề ôn tập |
+| POST | `/api/practice/[id]/pin` | Pin câu hỏi đề ôn tập |
+| POST | `/api/practice/[id]/reset` | Reset câu hỏi đề ôn tập |
+| GET | `/api/results` | Kết quả thi của user |
+| GET | `/api/results/[id]` | Chi tiết 1 kết quả |
 
 ---
 
@@ -295,23 +332,234 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 
 ## 7. Ghi chú quan trọng cho AI
 
+### 7.1 Tổng quan hệ thống
 1. **Đây là hệ thống đang vận hành thực tế** tại Công ty Điện lực Sơn La, không phải dự án mẫu. Cần cẩn trọng khi thay đổi logic.
 2. **Đã migrate từ SQLite → PostgreSQL**: Schema dùng UUID, `@db.Uuid`, `@db.Text`, `@db.DoublePrecision`. Không dùng SQLite-specific features.
-3. **Hệ thống 3 role + Permission-based quyền**:
-   - Role: ADMIN, PROCTOR, CANDIDATE (giữ nguyên làm nhóm quyền mặc định)
-   - Permission: 14 quyền chi tiết trong 5 nhóm, lưu trong bảng `Permission` + `UserPermission`
-   - Nếu user có bản ghi `UserPermission` → override mode (dùng đúng danh sách đó)
-   - Nếu không có → fallback về role defaults
-   - ADMIN mặc định: tất cả 14 quyền. PROCTOR: 5 quyền (monitor.view, results.view, results.print_export, exam.unlock, statistics.view). CANDIDATE: không có quyền admin nào
-4. **Cách kiểm tra quyền trong API**: Dùng `requirePermission(key)` từ `lib/permissions.ts`
+3. **Hai thư viện JWT tồn tại song song**: `jsonwebtoken` (trong `lib/auth.ts` + API routes) và `jose` (trong `middleware.ts` + `admin/layout.tsx`). Cả hai dùng chung `JWT_SECRET` từ env. Token format tương thích giữa hai thư viện. Khi thêm auth mới, ưu tiên dùng `verifyToken` từ `lib/auth.ts` hoặc `requirePermission` từ `lib/permissions.ts`.
+
+### 7.2 Hệ thống phân quyền (Permission System)
+
+#### Bảng đầy đủ 14 quyền:
+| Key | Tên hiển thị | Nhóm | Mô tả |
+|:---|:---|:---|:---|
+| `users.view` | Xem danh sách người dùng | Người dùng | Xem danh sách và thông tin người dùng |
+| `users.create` | Tạo người dùng mới | Người dùng | Tạo tài khoản người dùng mới |
+| `users.edit` | Chỉnh sửa người dùng | Người dùng | Sửa thông tin, vai trò, trạng thái, khóa/mở khóa |
+| `users.delete` | Xóa người dùng | Người dùng | Xóa tài khoản người dùng |
+| `users.import_export` | Import/Export người dùng | Người dùng | Import Excel và xuất Excel danh sách user |
+| `questions.manage` | Quản lý câu hỏi | Câu hỏi & Chủ đề | Tạo, sửa, xóa, import câu hỏi |
+| `topics.manage` | Quản lý chủ đề | Câu hỏi & Chủ đề | Tạo, sửa, xóa, import, sắp xếp cây chủ đề |
+| `exams.manage` | Quản lý đề thi | Đề thi & Ca thi | Tạo, sửa, xóa đề thi, cấu hình ma trận, gán user |
+| `sessions.manage` | Quản lý ca thi | Đề thi & Ca thi | Tạo, sửa, xóa ca thi, gán đề thi vào ca |
+| `monitor.view` | Xem giám sát thi | Giám sát & Kết quả | Xem danh sách thí sinh đang làm bài real-time |
+| `results.view` | Xem kết quả thi | Giám sát & Kết quả | Xem danh sách và chi tiết kết quả thi |
+| `results.print_export` | In/Xuất kết quả | Giám sát & Kết quả | In phiếu điểm và xuất danh sách kết quả Excel |
+| `exam.unlock` | Mở khóa bài thi | Giám sát & Kết quả | Mở khóa bài thi cho thí sinh bị khóa do vi phạm |
+| `statistics.view` | Xem thống kê | Thống kê | Xem biểu đồ, phân bố điểm, báo cáo tổng quan |
+
+#### Role defaults:
+```typescript
+ADMIN:    [TẤT CẢ 14 quyền]
+PROCTOR:  ['monitor.view', 'results.view', 'results.print_export', 'exam.unlock', 'statistics.view']
+CANDIDATE:[]
+```
+
+#### Logic override:
+```
+if (UserPermission có bản ghi cho user này)
+    → Dùng chính xác danh sách đó (override mode)
+else
+    → Dùng ROLE_DEFAULT_PERMISSIONS[user.role] (fallback mode)
+```
+
+"Khôi phục theo vai trò" = xóa hết `UserPermission` → quay về fallback mode.
+
+### 7.3 Code Patterns — API Routes
+
+#### Pattern A: Admin API route có kiểm tra quyền (DÙNG MỚI)
+```typescript
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/permissions';
+
+export async function GET(request: Request) {
+    try {
+        // 1. Kiểm tra quyền — trả về 401/403 nếu không có quyền
+        const userIdOrErr = await requirePermission('users.view');
+        if (typeof userIdOrErr !== 'string') return userIdOrErr;
+        // userIdOrErr giờ là string (userId)
+
+        // 2. Logic nghiệp vụ
+        const data = await prisma.user.findMany();
+        return NextResponse.json(data);
+    } catch (error) {
+        console.error('[API] Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+```
+
+#### Pattern B: User-facing route (chỉ cần xác thực, không cần quyền admin)
+```typescript
+import { getAuthUserId } from '@/lib/permissions';
+// hoặc dùng verifyToken từ lib/auth.ts như cũ
+
+const userIdOrErr = await getAuthUserId();
+if (typeof userIdOrErr !== 'string') return userIdOrErr;
+```
+
+#### Pattern C: Đọc params trong route handler (Next.js App Router)
+```typescript
+// params là Promise — dùng await để lấy giá trị
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
+    // ...
+}
+```
+
+### 7.4 Code Patterns — Frontend
+
+#### Pattern A: Client Component với permission check
+```typescript
+'use client';
+import { useState, useEffect } from 'react';
+
+export default function MyPage() {
+    const [permissions, setPermissions] = useState<string[]>([]);
+    const can = (perm: string) => permissions.includes(perm);
+
+    useEffect(() => {
+        fetch('/api/auth/me')
+            .then(r => r.json())
+            .then(data => setPermissions(data.permissions || []));
+    }, []);
+
+    return (
+        <div>
+            {can('users.create') && (
+                <button>Tạo người dùng mới</button>
+            )}
+        </div>
+    );
+}
+```
+
+#### Pattern B: Server Component (admin layout) — dùng getUserPermissions từ server
+```typescript
+// File: app/admin/layout.tsx (Server Component — KHÔNG có 'use client')
+import { getUserPermissions } from '@/lib/permissions';
+
+export default async function AdminLayout({ children }) {
+    // ... verify JWT bằng jose, lấy user từ DB
+    const permissions = await getUserPermissions(userId);
+    const can = (perm: string) => permissions.includes(perm);
+    // Render menu items conditionally
+}
+```
+
+#### Pattern C: Form POST/PUT pattern
+```typescript
+const res = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, full_name: fullName, department, field, role }),
+});
+if (res.ok) {
+    router.push('/admin');  // thành công → redirect
+} else {
+    const data = await res.json();
+    alert(data.error || 'Lỗi');  // thất bại → hiển thị lỗi
+}
+```
+
+### 7.5 Middleware Flow (middleware.ts)
+
+```
+Request → middleware.ts
+  ├─ MAINTENANCE_MODE? → redirect /maintenance
+  ├─ path === /login hoặc /api/auth? → next() (public)
+  ├─ Không có token cookie? → redirect /login
+  ├─ JWT verify (jose) thất bại? → redirect /login
+  ├─ path startsWith /admin?
+  │   ├─ role !== ADMIN && role !== PROCTOR? → redirect /login
+  │   └─ OK → next()
+  └─ path khác (/exam, /, /api/...) → next()
+```
+
+**Matcher pattern (những path được middleware xử lý):**
+```typescript
+matcher: ['/admin/:path*', '/exam/:path*', '/', '/api/admin/:path*', '/api/exam/:path*', '/maintenance']
+```
+
+**Lưu ý:** Role CANDIDATE bị chặn khỏi `/admin` page routes, nhưng `/api/admin/*` được phép đi qua middleware (chỉ cần token hợp lệ). Việc kiểm tra quyền chi tiết được thực hiện ở từng API route qua `requirePermission()`. Đây là kiến trúc defense-in-depth: middleware là coarse gate (role), API route là fine-grained gate (permission).
+
+### 7.6 Login & Redirect Flow
+```
+login/page.tsx → POST /api/auth/login
+  → thành công: data.user.role === 'ADMIN'    → router.push('/admin')
+                data.user.role === 'PROCTOR'  → router.push('/admin/monitor')
+                data.user.role === 'CANDIDATE' → router.push('/exam')
+  → thất bại: hiển thị data.error (Sai tài khoản hoặc mật khẩu / Tài khoản đã bị khóa)
+```
+
+### 7.7 Exam Runner — Chi tiết kỹ thuật
+
+1. **Time sync**: Server gửi `serverTime` (ISO string) trong response. Client tính `timeOffset = serverTime - Date.now()`. Tất cả tính toán thời gian đều dùng `Date.now() + timeOffset` để đồng bộ với server.
+2. **Question order + Options order**: Lưu vào `Result.details.questionOrder` và `Result.details.optionsOrder` khi tạo `IN_PROGRESS`. Khi F5, order được tải lại từ DB, không shuffle lại.
+3. **Session conflict**: Mỗi lần GET exam tạo `session_token` UUID mới lưu vào Result. Khi POST progress/submit, client gửi sessionToken. Server so sánh — nếu khác → 409 SESSION_EXPIRED.
+4. **Auto-submit khi hết giờ**: Client tự gọi handleSubmit khi timeLeft ≤ 0. Ngoài ra, `autoSubmitExam()` trong `lib/exam-helper.ts` được gọi từ server nếu GET exam thấy `started_at + duration + 2 phút < now` (fallback nếu client bị đóng).
+5. **Multi-answer scoring**: 
    ```typescript
-   const userIdOrErr = await requirePermission('users.view');
-   if (typeof userIdOrErr !== 'string') return userIdOrErr; // trả về 401/403
+   const setA = new Set(userAns);  // user answers
+   const setB = new Set(correctAns);  // correct answers
+   const isCorrect = setA.size === setB.size && [...setA].every(v => setB.has(v));
    ```
-5. **Cách kiểm tra quyền ở Client**: Gọi `/api/auth/me` → lấy `data.permissions[]` → dùng `can(key)` helper
-6. **Exam type**: OFFICIAL (thi thật, giới hạn attempts, anti-cheat), PRACTICE (ôn tập, không giới hạn, không anti-cheat), TWO_PART (2 phần riêng biệt, phải đạt cả 2).
-7. **Shuffle questions & options**: Mỗi lần bắt đầu thi, câu hỏi và đáp án được xáo trộn và lưu vĩnh viễn vào `Result.details`. Không shuffle lại khi F5.
-8. **Session token**: Mỗi lần tạo Result IN_PROGRESS sẽ có `session_token` UUID để phát hiện thi nhiều tab/thiết bị.
-9. **Anti-cheat**: Yêu cầu Fullscreen API, phát hiện tab hidden + window blur, chặn chuột phải/copy/paste. Mobile được miễn fullscreen.
-10. **Multi-answer questions**: Đáp án đúng có thể là mảng (VD: `["A","C"]`), chấm điểm bằng so sánh Set.
-11. **Các script TS ở root**: Hầu hết là script tạm dùng 1 lần, đã gitignored + excluded khỏi tsconfig. Không cần quan tâm khi build.
+
+### 7.8 TWO_PART Exam — Cách hoạt động
+
+- **Cấu hình**: `Exam.settings` chứa JSON `{ twoPartConfig: { part1Label, part2Label, part1PassPercent, part2PassPercent, part1QuestionIds, part2QuestionIds }, part1Matrix: {topicId: count}, part2Matrix: {topicId: count} }`
+- **Chấm điểm**: `calculateTwoPartScore()` trong `lib/exam-types.ts` — tính điểm riêng Part 1 và Part 2 dựa trên ma trận topic. Điểm mỗi phần = (số câu đúng / tổng câu) * 10.
+- **Điều kiện đạt**: `part1Passed AND part2Passed` — phải đạt cả 2 phần.
+- **Kết quả**: Lưu `twoPartScore` vào `Result.details.twoPartScore`.
+
+### 7.9 PRACTICE Mode — Điểm khác biệt với OFFICIAL
+- Không giới hạn số lần làm (bỏ qua `max_attempts`)
+- Không yêu cầu fullscreen, không anti-cheat
+- Mỗi lần vào thi regenerate câu hỏi mới từ matrix (VD: mỗi topic lấy ngẫu nhiên N câu)
+- Có thể fork từ đề public: `practiceSourceId` trỏ đến đề gốc
+- Có thể pin (lưu câu hỏi hiện tại) hoặc reset (tạo câu hỏi mới)
+
+### 7.10 Các điểm cần lưu ý khi thêm tính năng mới
+
+1. **API mới cần `requirePermission(key)`** nếu là admin route. Chọn key phù hợp từ bảng 14 quyền.
+2. **Nếu thêm quyền mới**: Thêm vào `PERMISSION_DEFINITIONS` trong `lib/permissions.ts`, thêm vào `PERM_GROUPS` trong `app/admin/users/[id]/page.tsx`, cập nhật `prisma/seed.ts`.
+3. **Nếu thêm role mới**: Cập nhật `ROLE_DEFAULT_PERMISSIONS` trong `lib/permissions.ts`, cập nhật middleware role check, cập nhật login redirect, cập nhật admin layout role badge.
+4. **Frontend page mới trong /admin**: Wrap trong Server Component layout (tự động có sidebar). Dùng `can()` helper để ẩn/hiện nút.
+5. **Không import trực tiếp `cookies` từ `next/headers` trong API routes nữa** — dùng `requirePermission()` hoặc `getAuthUserId()` từ `lib/permissions.ts`.
+6. **TypeScript strict**: Không dùng `any` trừ khi bắt buộc. Params là `Promise<>` trong Next.js App Router.
+7. **Database migration**: Dùng `npx prisma db push` nếu không có quyền CREATE DATABASE. File migration SQL nên được commit riêng.
+
+### 7.11 Các lỗi thường gặp
+
+| Lỗi | Nguyên nhân | Cách sửa |
+|:---|:---|:---|
+| `Cannot find name 'cookies'` | Import `cookies` bị xóa khi thay thế auth check cũ | Dùng `requirePermission()` — không cần `cookies` nữa |
+| `params must be awaited` | Next.js App Router yêu cầu `await params` | Thêm `const { id } = await params;` |
+| `Type error in backup files` | tsconfig include quét cả thư mục backups | Đã exclude trong tsconfig — nếu thêm thư mục mới, cập nhật tsconfig |
+| `Permission denied to create database` | PostgreSQL user không có quyền CREATEDB | Dùng `prisma db push` thay vì `migrate dev` |
+| Build thành công nhưng runtime lỗi | Thiếu `DATABASE_URL` env khi chạy production | Kiểm tra `.env` hoặc biến môi trường hệ thống |
+
+### 7.12 Quy ước đặt tên
+- **Permission key**: `resource.action` — VD: `users.view`, `exams.manage`, `exam.unlock`
+- **API response error**: `{ error: 'Mô tả lỗi tiếng Việt' }` — status 400/401/403/404/500
+- **HTTP status convention**:
+  - 200: Thành công
+  - 400: Bad request (thiếu field, sai format)
+  - 401: Chưa đăng nhập / token không hợp lệ
+  - 403: Không có quyền (sai role hoặc thiếu permission)
+  - 404: Không tìm thấy resource
+  - 409: Conflict (session takeover, double submit)
+  - 500: Lỗi server
