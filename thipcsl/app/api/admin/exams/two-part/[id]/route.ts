@@ -129,12 +129,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         }
 
         const totalQuestions = part1QuestionIds.length + part2QuestionIds.length;
-        if (totalQuestions > 50) {
-            return NextResponse.json(
-                { error: `Tổng số câu hỏi không được vượt quá 50. Hiện tại: ${totalQuestions}` },
-                { status: 400 }
-            );
+
+        // Validate: mỗi phần phải có ít nhất 1 câu
+        if (part1QuestionIds.length === 0) {
+            return NextResponse.json({ error: 'Phần 1 phải có ít nhất 1 câu hỏi' }, { status: 400 });
         }
+        if (part2QuestionIds.length === 0) {
+            return NextResponse.json({ error: 'Phần 2 phải có ít nhất 1 câu hỏi' }, { status: 400 });
+        }
+
+        // Validate pass percentages
+        const p1Pass = part1PassPercent !== undefined ? Number(part1PassPercent) : (oldSettings.twoPartConfig?.part1PassPercent || 70);
+        const p2Pass = part2PassPercent !== undefined ? Number(part2PassPercent) : (oldSettings.twoPartConfig?.part2PassPercent || 70);
+        if (p1Pass < 0 || p1Pass > 100) {
+            return NextResponse.json({ error: 'Tỷ lệ đỗ Phần 1 phải nằm trong khoảng từ 0 đến 100' }, { status: 400 });
+        }
+        if (p2Pass < 0 || p2Pass > 100) {
+            return NextResponse.json({ error: 'Tỷ lệ đỗ Phần 2 phải nằm trong khoảng từ 0 đến 100' }, { status: 400 });
+        }
+        // KHÔNG giới hạn tổng số câu cứng
 
         // Cập nhật twoPartConfig
         newSettings = {
@@ -143,8 +156,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             twoPartConfig: {
                 part1Label: 'Yêu cầu chung',
                 part2Label: 'Yêu cầu riêng',
-                part1PassPercent: part1PassPercent !== undefined ? Number(part1PassPercent) : (oldSettings.twoPartConfig?.part1PassPercent || 70),
-                part2PassPercent: part2PassPercent !== undefined ? Number(part2PassPercent) : (oldSettings.twoPartConfig?.part2PassPercent || 70),
+                part1PassPercent: p1Pass,
+                part2PassPercent: p2Pass,
                 part1QuestionIds,
                 part2QuestionIds,
             },

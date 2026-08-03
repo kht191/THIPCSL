@@ -244,10 +244,12 @@ export default function EditExam({ params }: { params: Promise<{ id: string }> }
                             <label className="block text-sm font-medium text-gray-700 mb-1">Số lần thi tối đa</label>
                             <input type="number" min="1" required value={maxAttempts} onChange={e => setMaxAttempts(Number(e.target.value))} className="w-full border border-gray-300 rounded px-3 py-2 text-black" />
                         </div>
+                        {examType !== 'TWO_PART' && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Điểm đạt (thang 10)</label>
                             <input type="number" min="0" max="10" step="0.1" required value={passScore} onChange={e => setPassScore(Number(e.target.value))} className="w-full border border-gray-300 rounded px-3 py-2 text-black" />
                         </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Số lần vi phạm tối đa</label>
                             <input type="number" min="0" required value={maxViolations} onChange={e => setMaxViolations(Number(e.target.value))} className="w-full border border-gray-300 rounded px-3 py-2 text-black" />

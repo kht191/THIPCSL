@@ -668,7 +668,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     questions,
                     parseCorrectAnswerValue,
                     twoPartConfig.part1PassPercent || 70,
-                    twoPartConfig.part2PassPercent || 70
+                    twoPartConfig.part2PassPercent || 70,
+                    twoPartConfig.part1Label || 'Yêu cầu chung',
+                    twoPartConfig.part2Label || 'Yêu cầu riêng'
                 );
                 twoPartScore = result.twoPartScore;
                 correctCount = twoPartScore.part1Correct + twoPartScore.part2Correct;

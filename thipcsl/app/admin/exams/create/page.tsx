@@ -261,7 +261,7 @@ export default function CreateExam() {
                             <option value="TWO_PART">Đề 2 phần (Yêu cầu chung + Yêu cầu riêng)</option>
                         </select>
                         {examType === 'TWO_PART' && (
-                            <p className="text-xs text-blue-600 mt-1">Đề thi gồm 2 phần: Yêu cầu chung (~40%) và Yêu cầu riêng (~60%). Mỗi phần có tỷ lệ đỗ riêng.</p>
+                            <p className="text-xs text-blue-600 mt-1">Đề thi gồm 2 phần: Yêu cầu chung và Yêu cầu riêng. Mỗi phần có tỷ lệ đỗ riêng, cần đạt cả hai.</p>
                         )}
                     </div>
                     <div>
@@ -314,7 +314,7 @@ export default function CreateExam() {
             {step === 2 && examType === 'TWO_PART' && (
                 <div className="space-y-6">
                     <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                        <h3 className="font-bold text-blue-800 text-lg">Phần 1: Yêu cầu chung (~40% tổng số câu)</h3>
+                        <h3 className="font-bold text-blue-800 text-lg">Phần 1: Yêu cầu chung</h3>
                     </div>
                     {renderTopicMatrix(selectedPart1Topics, part1Matrix, setSelectedPart1Topics, setPart1Matrix)}
                     <div className="border-t pt-4">
@@ -336,7 +336,7 @@ export default function CreateExam() {
             {step === 3 && examType === 'TWO_PART' && (
                 <div className="space-y-6">
                     <div className="bg-green-50 p-4 rounded border border-green-200">
-                        <h3 className="font-bold text-green-800 text-lg">Phần 2: Yêu cầu riêng (~60% tổng số câu)</h3>
+                        <h3 className="font-bold text-green-800 text-lg">Phần 2: Yêu cầu riêng</h3>
                     </div>
                     {renderTopicMatrix(selectedPart2Topics, part2Matrix, setSelectedPart2Topics, setPart2Matrix)}
                     <div className="border-t pt-4">
@@ -349,12 +349,11 @@ export default function CreateExam() {
                         <h3 className="font-bold text-gray-800 mb-2">Tổng kết</h3>
                         <p>Phần 1: <strong>{getPart1Total()} câu</strong> (đỗ ≥ {part1PassPercent}%)</p>
                         <p>Phần 2: <strong>{getPart2Total()} câu</strong> (đỗ ≥ {part2PassPercent}%)</p>
-                        <p className="mt-2">Tổng: <strong className="text-lg">{getGrandTotal()}</strong> / 50 câu</p>
-                        {getGrandTotal() > 50 && <p className="text-red-600 font-bold">⚠️ Vượt quá 50 câu!</p>}
+                        <p className="mt-2">Tổng: <strong className="text-lg">{getGrandTotal()}</strong> câu</p>
                     </div>
                     <div className="flex justify-between">
                         <button onClick={handleBack} className="px-4 py-2 border rounded text-gray-700">Quay lại</button>
-                        <button onClick={handleNext} disabled={getPart2Total() === 0 || getGrandTotal() > 50}
+                        <button onClick={handleNext} disabled={getPart2Total() === 0}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300">Tiếp tục</button>
                     </div>
                 </div>

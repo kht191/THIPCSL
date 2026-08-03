@@ -84,6 +84,16 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Thieu ma tran cho de thi 2 phan' }, { status: 400 });
             }
 
+            // Validate pass percentages
+            const p1Pass = Number(part1PassPercent) || 70;
+            const p2Pass = Number(part2PassPercent) || 70;
+            if (p1Pass < 0 || p1Pass > 100) {
+                return NextResponse.json({ error: 'Ty le do Phan 1 phai nam trong khoang tu 0 den 100' }, { status: 400 });
+            }
+            if (p2Pass < 0 || p2Pass > 100) {
+                return NextResponse.json({ error: 'Ty le do Phan 2 phai nam trong khoang tu 0 den 100' }, { status: 400 });
+            }
+
             let part1Ids: string[], part2Ids: string[];
             try {
                 part1Ids = await selectQuestions(part1Matrix);
@@ -94,7 +104,10 @@ export async function POST(request: Request) {
 
             const total = part1Ids.length + part2Ids.length;
             if (total === 0) return NextResponse.json({ error: 'Chua chon cau hoi nao' }, { status: 400 });
-            if (total > 50) return NextResponse.json({ error: `Tong so cau hoi khong duoc vuot qua 50. Hien tai: ${total}` }, { status: 400 });
+            // Mỗi phần phải có ít nhất 1 câu
+            if (part1Ids.length === 0) return NextResponse.json({ error: 'Phan 1 phai co it nhat 1 cau' }, { status: 400 });
+            if (part2Ids.length === 0) return NextResponse.json({ error: 'Phan 2 phai co it nhat 1 cau' }, { status: 400 });
+            // KHÔNG giới hạn tổng số câu cứng
 
             selectedQuestionIds = [...part1Ids, ...part2Ids];
             settings = {
@@ -103,8 +116,8 @@ export async function POST(request: Request) {
                 twoPartConfig: {
                     part1Label: 'Yeu cau chung',
                     part2Label: 'Yeu cau rieng',
-                    part1PassPercent: Number(part1PassPercent) || 70,
-                    part2PassPercent: Number(part2PassPercent) || 70,
+                    part1PassPercent: p1Pass,
+                    part2PassPercent: p2Pass,
                     part1QuestionIds: part1Ids,
                     part2QuestionIds: part2Ids,
                 }
@@ -138,7 +151,7 @@ export async function POST(request: Request) {
                 allowed_users: JSON.stringify(allowed_users || []),
                 status: 'OPEN',
                 type: type === 'TWO_PART' ? 'TWO_PART' : 'OFFICIAL',
-                pass_score: parseFloat(pass_score) || 5.0,
+                pass_score: type === 'TWO_PART' ? 5.0 : (parseFloat(pass_score) || 5.0),
                 settings: JSON.stringify(settings),
             },
         });

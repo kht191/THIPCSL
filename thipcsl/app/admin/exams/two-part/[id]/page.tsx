@@ -390,6 +390,11 @@ export default function EditTwoPartExam({ params }: { params: Promise<{ id: stri
                             <p className="text-xs text-gray-500 mt-1">Hiện có {part2Total} câu trong Phần 2</p>
                         </div>
                     </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                        <p className="text-sm text-gray-700">
+                            Tổng số câu đề: <strong>{part1Total + part2Total}</strong> (Phần 1: {part1Total} + Phần 2: {part2Total})
+                        </p>
+                    </div>
                 </div>
 
                 {/* Matrix Regeneration */}
@@ -407,10 +412,10 @@ export default function EditTwoPartExam({ params }: { params: Promise<{ id: stri
                     {regenerateQuestions ? (
                         <div className="space-y-8">
                             <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                                {renderMatrixRows(part1MatrixRows, setPart1MatrixRows, 'Phần 1: Yêu cầu chung (40%)')}
+                                {renderMatrixRows(part1MatrixRows, setPart1MatrixRows, 'Phần 1: Yêu cầu chung')}
                             </div>
                             <div className="bg-green-50 p-4 rounded border border-green-200">
-                                {renderMatrixRows(part2MatrixRows, setPart2MatrixRows, 'Phần 2: Yêu cầu riêng (60%)')}
+                                {renderMatrixRows(part2MatrixRows, setPart2MatrixRows, 'Phần 2: Yêu cầu riêng')}
                             </div>
                         </div>
                     ) : (

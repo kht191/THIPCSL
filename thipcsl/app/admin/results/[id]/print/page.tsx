@@ -129,8 +129,8 @@ export default function PrintResultPage({ params }: { params: Promise<{ id: stri
                                         <td className="border border-black px-2 py-1 font-bold">Phần 1: {twoPartScore.part1Label || 'Yêu cầu chung'}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Correct}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Total}</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Total > 0 ? Math.round(twoPartScore.part1Correct / twoPartScore.part1Total * 100) : 0}%</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Score.toFixed(1)}</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part1Percent ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total) * 100 : 0)).toFixed(2)}%</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part1Score ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total * 10) : 0)).toFixed(1)}</td>
                                         <td className={`border border-black px-2 py-1 text-center font-bold ${twoPartScore.part1Passed ? '' : 'text-red-600'}`}>
                                             {twoPartScore.part1Passed ? 'ĐẠT' : 'KHÔNG ĐẠT'}
                                         </td>
@@ -139,8 +139,8 @@ export default function PrintResultPage({ params }: { params: Promise<{ id: stri
                                         <td className="border border-black px-2 py-1 font-bold">Phần 2: {twoPartScore.part2Label || 'Yêu cầu riêng'}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Correct}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Total}</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Total > 0 ? Math.round(twoPartScore.part2Correct / twoPartScore.part2Total * 100) : 0}%</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Score.toFixed(1)}</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part2Percent ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total) * 100 : 0)).toFixed(2)}%</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part2Score ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total * 10) : 0)).toFixed(1)}</td>
                                         <td className={`border border-black px-2 py-1 text-center font-bold ${twoPartScore.part2Passed ? '' : 'text-red-600'}`}>
                                             {twoPartScore.part2Passed ? 'ĐẠT' : 'KHÔNG ĐẠT'}
                                         </td>

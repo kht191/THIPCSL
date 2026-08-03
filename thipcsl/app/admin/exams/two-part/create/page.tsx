@@ -130,6 +130,28 @@ export default function CreateTwoPartExam() {
     const handleSubmit = async () => {
         setLoading(true);
         try {
+            // Validate mỗi phần phải có ít nhất 1 câu
+            if (getPart1Total() === 0) {
+                alert('Phần 1 phải có ít nhất 1 câu hỏi');
+                setLoading(false);
+                return;
+            }
+            if (getPart2Total() === 0) {
+                alert('Phần 2 phải có ít nhất 1 câu hỏi');
+                setLoading(false);
+                return;
+            }
+            if (part1PassPercent < 0 || part1PassPercent > 100) {
+                alert('Tỷ lệ đỗ Phần 1 phải nằm trong khoảng từ 0 đến 100');
+                setLoading(false);
+                return;
+            }
+            if (part2PassPercent < 0 || part2PassPercent > 100) {
+                alert('Tỷ lệ đỗ Phần 2 phải nằm trong khoảng từ 0 đến 100');
+                setLoading(false);
+                return;
+            }
+
             const res = await fetch('/api/admin/exams/two-part', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -168,15 +190,9 @@ export default function CreateTwoPartExam() {
         matrix: { [key: string]: number },
         setSelected: (ids: string[]) => void,
         setMatrix: (m: { [key: string]: number }) => void,
-        label: string,
-        targetPercent: number
+        label: string
     ) => (
         <div className="space-y-6">
-            <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
-                <p className="text-sm text-yellow-800">
-                    Mục tiêu: <strong>{targetPercent}%</strong> tổng số câu hỏi của đề thi
-                </p>
-            </div>
 
             <div className="bg-blue-50 p-4 rounded border border-blue-200">
                 <h3 className="font-bold text-blue-800 mb-2">Chọn Chủ đề cho {label}</h3>
@@ -250,7 +266,7 @@ export default function CreateTwoPartExam() {
 
             {/* Step Indicator */}
             <div className="flex mb-8 border-b pb-4">
-                {['Thông tin chung', 'Phần 1: Yêu cầu chung (40%)', 'Phần 2: Yêu cầu riêng (60%)', 'Chọn thí sinh'].map((label, i) => (
+                {['Thông tin chung', 'Phần 1: Yêu cầu chung', 'Phần 2: Yêu cầu riêng', 'Chọn thí sinh'].map((label, i) => (
                     <div
                         key={i}
                         className={`flex-1 text-center text-sm font-medium px-2 ${step === i + 1 ? 'text-blue-600 font-bold' : step > i + 1 ? 'text-green-600' : 'text-gray-400'
@@ -332,10 +348,10 @@ export default function CreateTwoPartExam() {
                 <div className="space-y-6">
                     <div className="bg-blue-50 p-4 rounded border border-blue-200 mb-4">
                         <h3 className="font-bold text-blue-800 text-lg">Phần 1: Yêu cầu chung</h3>
-                        <p className="text-sm text-blue-600">Chiếm 40% tổng số câu hỏi của đề thi</p>
+                        <p className="text-sm text-blue-600">Cấu hình ma trận câu hỏi cho phần 1</p>
                     </div>
 
-                    {renderTopicMatrix(selectedPart1Topics, part1Matrix, setSelectedPart1Topics, setPart1Matrix, 'Phần 1 - Yêu cầu chung', 40)}
+                    {renderTopicMatrix(selectedPart1Topics, part1Matrix, setSelectedPart1Topics, setPart1Matrix, 'Phần 1 - Yêu cầu chung')}
 
                     <div className="border-t pt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -376,10 +392,10 @@ export default function CreateTwoPartExam() {
                 <div className="space-y-6">
                     <div className="bg-green-50 p-4 rounded border border-green-200 mb-4">
                         <h3 className="font-bold text-green-800 text-lg">Phần 2: Yêu cầu riêng</h3>
-                        <p className="text-sm text-green-600">Chiếm 60% tổng số câu hỏi của đề thi</p>
+                        <p className="text-sm text-green-600">Cấu hình ma trận câu hỏi cho phần 2</p>
                     </div>
 
-                    {renderTopicMatrix(selectedPart2Topics, part2Matrix, setSelectedPart2Topics, setPart2Matrix, 'Phần 2 - Yêu cầu riêng', 60)}
+                    {renderTopicMatrix(selectedPart2Topics, part2Matrix, setSelectedPart2Topics, setPart2Matrix, 'Phần 2 - Yêu cầu riêng')}
 
                     <div className="border-t pt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -413,13 +429,8 @@ export default function CreateTwoPartExam() {
                         </div>
                         <div className="mt-3 pt-3 border-t">
                             <p className="text-sm text-gray-600">
-                                Tổng cộng: <strong className="text-lg">{getGrandTotal()}</strong> / 50 câu
+                                Tổng cộng: <strong className="text-lg">{getGrandTotal()}</strong> câu
                             </p>
-                            {getGrandTotal() > 50 && (
-                                <p className="text-red-600 text-sm font-bold mt-1">
-                                    ⚠️ Vượt quá 50 câu! Vui lòng giảm số lượng.
-                                </p>
-                            )}
                         </div>
                     </div>
 
@@ -427,7 +438,7 @@ export default function CreateTwoPartExam() {
                         <button onClick={handleBack} className="px-4 py-2 border rounded text-gray-700">Quay lại</button>
                         <button
                             onClick={handleNext}
-                            disabled={getPart2Total() === 0 || getGrandTotal() > 50}
+                            disabled={getPart2Total() === 0}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300"
                         >
                             Tiếp tục

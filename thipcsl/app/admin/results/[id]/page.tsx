@@ -124,7 +124,7 @@ export default function ResultDetail({ params }: { params: Promise<{ id: string 
                                         <td className="border border-black px-2 py-1 font-bold">Phần 1: {twoPartScore.part1Label || 'Yêu cầu chung'}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Correct}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Total}</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part1Total > 0 ? Math.round(twoPartScore.part1Correct / twoPartScore.part1Total * 100) : 0}%</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part1Percent ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total) * 100 : 0)).toFixed(2)}%</td>
                                         <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part1Score ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total * 10) : 0)).toFixed(1)}</td>
                                         <td className={`border border-black px-2 py-1 text-center font-bold ${twoPartScore.part1Passed ? '' : 'text-red-600'}`}>
                                             {twoPartScore.part1Passed ? 'ĐẠT' : 'KHÔNG ĐẠT'}
@@ -134,7 +134,7 @@ export default function ResultDetail({ params }: { params: Promise<{ id: string 
                                         <td className="border border-black px-2 py-1 font-bold">Phần 2: {twoPartScore.part2Label || 'Yêu cầu riêng'}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Correct}</td>
                                         <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Total}</td>
-                                        <td className="border border-black px-2 py-1 text-center">{twoPartScore.part2Total > 0 ? Math.round(twoPartScore.part2Correct / twoPartScore.part2Total * 100) : 0}%</td>
+                                        <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part2Percent ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total) * 100 : 0)).toFixed(2)}%</td>
                                         <td className="border border-black px-2 py-1 text-center">{(twoPartScore.part2Score ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total * 10) : 0)).toFixed(1)}</td>
                                         <td className={`border border-black px-2 py-1 text-center font-bold ${twoPartScore.part2Passed ? '' : 'text-red-600'}`}>
                                             {twoPartScore.part2Passed ? 'ĐẠT' : 'KHÔNG ĐẠT'}
@@ -217,16 +217,18 @@ export default function ResultDetail({ params }: { params: Promise<{ id: string 
                             <div className="grid grid-cols-2 divide-x divide-blue-200">
                                 <div className="p-4">
                                     <h4 className="font-bold text-blue-700 mb-2">Phần 1: {twoPartScore.part1Label || 'Yêu cầu chung'}</h4>
-                                    <p className="text-sm">Đúng: <strong>{twoPartScore.part1Correct}/{twoPartScore.part1Total}</strong> ({twoPartScore.part1Total > 0 ? Math.round(twoPartScore.part1Correct / twoPartScore.part1Total * 100) : 0}%)</p>
-                                    <p className="text-sm">Điểm: <strong>{(twoPartScore.part1Score ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total * 10) : 0)).toFixed(1)}/10</strong></p>
+                                    <p className="text-sm">Đúng: <strong>{twoPartScore.part1Correct}/{twoPartScore.part1Total}</strong> câu</p>
+                                    <p className="text-sm">Tỷ lệ đúng: <strong>{(twoPartScore.part1Percent ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total) * 100 : 0)).toFixed(2)}%</strong></p>
+                                    <p className="text-sm">Yêu cầu: <strong>≥ {twoPartScore.part1PassPercent ?? 70}%</strong></p>
                                     <div className={`mt-2 px-3 py-1 rounded-full text-sm font-bold inline-block ${twoPartScore.part1Passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {twoPartScore.part1Passed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT'}
                                     </div>
                                 </div>
                                 <div className="p-4">
                                     <h4 className="font-bold text-green-700 mb-2">Phần 2: {twoPartScore.part2Label || 'Yêu cầu riêng'}</h4>
-                                    <p className="text-sm">Đúng: <strong>{twoPartScore.part2Correct}/{twoPartScore.part2Total}</strong> ({twoPartScore.part2Total > 0 ? Math.round(twoPartScore.part2Correct / twoPartScore.part2Total * 100) : 0}%)</p>
-                                    <p className="text-sm">Điểm: <strong>{(twoPartScore.part2Score ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total * 10) : 0)).toFixed(1)}/10</strong></p>
+                                    <p className="text-sm">Đúng: <strong>{twoPartScore.part2Correct}/{twoPartScore.part2Total}</strong> câu</p>
+                                    <p className="text-sm">Tỷ lệ đúng: <strong>{(twoPartScore.part2Percent ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total) * 100 : 0)).toFixed(2)}%</strong></p>
+                                    <p className="text-sm">Yêu cầu: <strong>≥ {twoPartScore.part2PassPercent ?? 70}%</strong></p>
                                     <div className={`mt-2 px-3 py-1 rounded-full text-sm font-bold inline-block ${twoPartScore.part2Passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {twoPartScore.part2Passed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT'}
                                     </div>

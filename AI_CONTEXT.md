@@ -1,7 +1,7 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
 > **Tạo lần đầu:** 2026-07-31
-> **Cập nhật gần nhất:** 2026-07-31 — Sửa 2 bug: Import Excel chủ đề cha/con + Sửa nhanh câu hỏi thiếu đáp án
+> **Cập nhật gần nhất:** 2026-08-03 — Cải tiến đề TWO_PART: bỏ giới hạn 50 câu, chấm theo phần trăm, ẩn pass_score
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án.
 > **Quy ước:** Mỗi khi hoàn thành một task, cập nhật trạng thái mới nhất vào file này.
@@ -189,10 +189,18 @@ User ──< Result >── Exam ──< ExamSession
 - [x] Responsive design (hỗ trợ Mobile + iOS double-tap fix)
 - [x] Pagination component dùng chung
 
-### 🟢 Đang làm dở / Hoạt động gần đây (Cập nhật: 2026-07-31)
+### 🟢 Đang làm dở / Hoạt động gần đây (Cập nhật: 2026-08-03)
 
 #### Vừa hoàn thành hôm nay:
-- [x] **Module 6: Quản lý Quyền Người dùng** — toàn bộ hệ thống permission-based access control
+- [x] **Cải tiến đề TWO_PART** — Bỏ giới hạn 50 câu, chấm điểm theo phần trăm, ẩn pass_score
+  - Bỏ toàn bộ điều kiện `totalQuestions > 50` trong 4 API routes và 4 UI pages
+  - Số câu mỗi phần = tổng count trong ma trận riêng (part1Matrix, part2Matrix)
+  - Tính đạt theo `partXPercent >= partXPassPercent` (so sánh phần trăm thực)
+  - Ẩn trường "Điểm đạt" ở UI khi exam.type === 'TWO_PART'
+  - Cập nhật `TwoPartScore` interface: thêm `part1Percent`, `part1PassPercent`, `part2Percent`, `part2PassPercent`, `part1Label`, `part2Label`
+  - Tương thích ngược: hiển thị dùng fallback cho dữ liệu cũ
+  - `npm run build`: ✅ thành công, 0 lỗi TypeScript
+- [x] **Sửa 2 bug Ngân hàng câu hỏi**:
   - Database: 2 bảng mới (`Permission`, `UserPermission`), **15 quyền** seed
   - `lib/permissions.ts`: `hasPermission()`, `getUserPermissions()`, `requirePermission()`
   - 34 API routes được bảo vệ (vá lỗ hổng auth cũ)
@@ -580,12 +588,43 @@ login/page.tsx → POST /api/auth/login
    const isCorrect = setA.size === setB.size && [...setA].every(v => setB.has(v));
    ```
 
-### 7.8 TWO_PART Exam — Cách hoạt động
+### 7.8 TWO_PART Exam — Cách hoạt động (Cập nhật 2026-08-03)
 
+- **KHÔNG CÒN giới hạn 50 câu**: Tổng số câu = tổng câu từ part1Matrix + tổng câu từ part2Matrix. Mỗi phần phải có ít nhất 1 câu.
+- **Số câu mỗi phần lấy từ ma trận riêng**: part1Total = tổng count trong part1Matrix; part2Total = tổng count trong part2Matrix.
 - **Cấu hình**: `Exam.settings` chứa JSON `{ twoPartConfig: { part1Label, part2Label, part1PassPercent, part2PassPercent, part1QuestionIds, part2QuestionIds }, part1Matrix: {topicId: count}, part2Matrix: {topicId: count} }`
-- **Chấm điểm**: `calculateTwoPartScore()` trong `lib/exam-types.ts` — tính điểm riêng Part 1 và Part 2 dựa trên ma trận topic. Điểm mỗi phần = (số câu đúng / tổng câu) * 10.
-- **Điều kiện đạt**: `part1Passed AND part2Passed` — phải đạt cả 2 phần.
-- **Kết quả**: Lưu `twoPartScore` vào `Result.details.twoPartScore`.
+- **Chấm điểm**: `calculateTwoPartScore()` trong `lib/exam-types.ts` — tính điểm riêng Part 1 và Part 2 dựa trên ma trận topic.
+- **Tính đạt theo phần trăm từng phần (KHÔNG dùng pass_score)**:
+  - part1Percent = (part1Correct / part1Total) * 100 (phần trăm thực, không làm tròn)
+  - part2Percent = (part2Correct / part2Total) * 100 (phần trăm thực, không làm tròn)
+  - part1Passed = part1Percent >= part1PassPercent
+  - part2Passed = part2Percent >= part2PassPercent
+  - isPassed = part1Passed && part2Passed
+- **Điểm thang 10 vẫn được tính** (part1Score, part2Score) để tham khảo/thống kê nhưng KHÔNG dùng để xác định đạt/không đạt.
+- **Ẩn trường "Điểm đạt" (pass_score)** ở giao diện khi exam.type === 'TWO_PART'. pass_score lưu mặc định 5.0 trong DB để tương thích schema.
+- **Kết quả**: Lưu `twoPartScore` vào `Result.details.twoPartScore` với cấu trúc mới.
+
+**Cấu trúc twoPartScore mới (2026-08-03)**:
+```typescript
+{
+  part1Label: string,       // "Yêu cầu chung"
+  part2Label: string,       // "Yêu cầu riêng"
+  part1Correct: number,
+  part1Total: number,
+  part1Percent: number,     // Phần trăm thực (VD: 66.666...), không làm tròn
+  part1PassPercent: number, // Tỷ lệ yêu cầu (VD: 70)
+  part1Score: number,       // Thang 10 (tham khảo)
+  part1Passed: boolean,
+  part2Correct: number,
+  part2Total: number,
+  part2Percent: number,     // Phần trăm thực
+  part2PassPercent: number, // Tỷ lệ yêu cầu
+  part2Score: number,       // Thang 10 (tham khảo)
+  part2Passed: boolean,
+  overallPassed: boolean,
+}
+```
+- **Tương thích ngược**: code hiển thị dùng fallback `twoPartScore.part1Percent ?? (part1Correct/part1Total*100)` và `twoPartScore.part1PassPercent ?? 70` nên đọc được cả dữ liệu cũ và mới.
 
 ### 7.9 PRACTICE Mode — Điểm khác biệt với OFFICIAL
 - Không giới hạn số lần làm (bỏ qua `max_attempts`)

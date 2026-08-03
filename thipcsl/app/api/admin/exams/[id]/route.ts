@@ -72,6 +72,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             const finalPart1Pass = part1PassPercent !== undefined ? Number(part1PassPercent) : (oldSettings.twoPartConfig?.part1PassPercent || 70);
             const finalPart2Pass = part2PassPercent !== undefined ? Number(part2PassPercent) : (oldSettings.twoPartConfig?.part2PassPercent || 70);
 
+            // Validate pass percentages
+            if (finalPart1Pass < 0 || finalPart1Pass > 100) {
+                return NextResponse.json({ error: 'Ty le do Phan 1 phai nam trong khoang tu 0 den 100' }, { status: 400 });
+            }
+            if (finalPart2Pass < 0 || finalPart2Pass > 100) {
+                return NextResponse.json({ error: 'Ty le do Phan 2 phai nam trong khoang tu 0 den 100' }, { status: 400 });
+            }
+
             let p1Ids = oldSettings.twoPartConfig?.part1QuestionIds || [];
             let p2Ids = oldSettings.twoPartConfig?.part2QuestionIds || [];
 
@@ -86,8 +94,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                 }
             }
 
-            const total = p1Ids.length + p2Ids.length;
-            if (total > 50) return NextResponse.json({ error: `Tong so cau khong duoc vuot qua 50. Hien tai: ${total}` }, { status: 400 });
+            // Validate: mỗi phần phải có ít nhất 1 câu
+            if (p1Ids.length === 0) return NextResponse.json({ error: 'Phan 1 phai co it nhat 1 cau' }, { status: 400 });
+            if (p2Ids.length === 0) return NextResponse.json({ error: 'Phan 2 phai co it nhat 1 cau' }, { status: 400 });
+            // KHÔNG giới hạn tổng số câu cứng
 
             updateData.question_ids = JSON.stringify([...p1Ids, ...p2Ids]);
             updateData.settings = JSON.stringify({
@@ -102,6 +112,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                     part2QuestionIds: p2Ids,
                 }
             });
+            // Không dùng pass_score cho TWO_PART, lưu mặc định 5.0
+            updateData.pass_score = 5.0;
         } else {
             // Cập nhật đề thường (giữ nguyên logic cũ)
             if (matrix) {

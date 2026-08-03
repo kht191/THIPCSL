@@ -139,8 +139,9 @@ export default function ExamResult() {
                             {/* Part 1 */}
                             <div className="p-4">
                                 <h4 className="font-bold text-blue-700 mb-2">Phần 1: {twoPartScore.part1Label || 'Yêu cầu chung'}</h4>
-                                <p className="text-sm">Đúng: <strong>{twoPartScore.part1Correct}/{twoPartScore.part1Total}</strong> ({twoPartScore.part1Total > 0 ? Math.round(twoPartScore.part1Correct / twoPartScore.part1Total * 100) : 0}%)</p>
-                                <p className="text-sm">Điểm: <strong>{twoPartScore.part1Score.toFixed(1)}/10</strong></p>
+                                <p className="text-sm">Đúng: <strong>{twoPartScore.part1Correct}/{twoPartScore.part1Total}</strong> câu</p>
+                                <p className="text-sm">Tỷ lệ đúng: <strong>{(twoPartScore.part1Percent ?? (twoPartScore.part1Total > 0 ? (twoPartScore.part1Correct / twoPartScore.part1Total) * 100 : 0)).toFixed(2)}%</strong></p>
+                                <p className="text-sm">Yêu cầu: <strong>≥ {twoPartScore.part1PassPercent ?? 70}%</strong></p>
                                 <div className={`mt-2 px-3 py-1 rounded-full text-sm font-bold inline-block ${twoPartScore.part1Passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     {twoPartScore.part1Passed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT'}
                                 </div>
@@ -148,8 +149,9 @@ export default function ExamResult() {
                             {/* Part 2 */}
                             <div className="p-4">
                                 <h4 className="font-bold text-green-700 mb-2">Phần 2: {twoPartScore.part2Label || 'Yêu cầu riêng'}</h4>
-                                <p className="text-sm">Đúng: <strong>{twoPartScore.part2Correct}/{twoPartScore.part2Total}</strong> ({twoPartScore.part2Total > 0 ? Math.round(twoPartScore.part2Correct / twoPartScore.part2Total * 100) : 0}%)</p>
-                                <p className="text-sm">Điểm: <strong>{twoPartScore.part2Score.toFixed(1)}/10</strong></p>
+                                <p className="text-sm">Đúng: <strong>{twoPartScore.part2Correct}/{twoPartScore.part2Total}</strong> câu</p>
+                                <p className="text-sm">Tỷ lệ đúng: <strong>{(twoPartScore.part2Percent ?? (twoPartScore.part2Total > 0 ? (twoPartScore.part2Correct / twoPartScore.part2Total) * 100 : 0)).toFixed(2)}%</strong></p>
+                                <p className="text-sm">Yêu cầu: <strong>≥ {twoPartScore.part2PassPercent ?? 70}%</strong></p>
                                 <div className={`mt-2 px-3 py-1 rounded-full text-sm font-bold inline-block ${twoPartScore.part2Passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     {twoPartScore.part2Passed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT'}
                                 </div>

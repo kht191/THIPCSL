@@ -25,6 +25,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Thiếu thông tin bắt buộc' }, { status: 400 });
         }
 
+        // Validate pass percentages
+        const p1Pass = Number(part1PassPercent) || 70;
+        const p2Pass = Number(part2PassPercent) || 70;
+        if (p1Pass < 0 || p1Pass > 100) {
+            return NextResponse.json({ error: 'Tỷ lệ đỗ Phần 1 phải nằm trong khoảng từ 0 đến 100' }, { status: 400 });
+        }
+        if (p2Pass < 0 || p2Pass > 100) {
+            return NextResponse.json({ error: 'Tỷ lệ đỗ Phần 2 phải nằm trong khoảng từ 0 đến 100' }, { status: 400 });
+        }
+
         // Helper function: chọn câu hỏi từ matrix
         async function selectQuestions(matrix: Record<string, number>): Promise<string[]> {
             const ids: string[] = [];
@@ -66,19 +76,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Chưa chọn câu hỏi nào' }, { status: 400 });
         }
 
-        if (totalQuestions > 50) {
-            return NextResponse.json(
-                { error: `Tổng số câu hỏi không được vượt quá 50. Hiện tại: ${totalQuestions}` },
-                { status: 400 }
-            );
+        // Mỗi phần phải có ít nhất 1 câu
+        if (part1QuestionIds.length === 0) {
+            return NextResponse.json({ error: 'Phần 1 phải có ít nhất 1 câu hỏi' }, { status: 400 });
         }
+        if (part2QuestionIds.length === 0) {
+            return NextResponse.json({ error: 'Phần 2 phải có ít nhất 1 câu hỏi' }, { status: 400 });
+        }
+
+        // KHÔNG giới hạn tổng số câu cứng. Số câu lấy từ ma trận.
 
         // Tạo cấu hình 2 phần
         const twoPartConfig = {
             part1Label: 'Yêu cầu chung',
             part2Label: 'Yêu cầu riêng',
-            part1PassPercent: Number(part1PassPercent) || 70,
-            part2PassPercent: Number(part2PassPercent) || 70,
+            part1PassPercent: p1Pass,
+            part2PassPercent: p2Pass,
             part1QuestionIds,
             part2QuestionIds,
         };
