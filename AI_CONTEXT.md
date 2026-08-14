@@ -396,7 +396,7 @@ npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 
 ### 6.1 Triển khai & chạy trên Linux 🐧
 
-> **Hệ thống hiện đang chạy trên Windows (PCC).** Khi triển khai lên server Linux, áp dụng các bước dưới đây. Chi tiết đầy đủ xem file `thipcsl/DEPLOY_LINUX.md` (nếu có) và `thipcsl/HUONG_DAN_DEPLOY_MAY_CHU_MOI.md`.
+> **Hệ thống hiện đang chạy trên Windows (PCC).** Khi triển khai lên server Linux, áp dụng các bước dưới đây. Hướng dẫn chi tiết đầy đủ xem file `thipcsl/DEPLOY_LINUX.md` và `thipcsl/HUONG_DAN_DEPLOY_MAY_CHU_MOI.md`.
 
 **1. Yêu cầu:** Node.js 20+ (LTS), PostgreSQL 14+, Nginx (nếu cần reverse proxy).
 
