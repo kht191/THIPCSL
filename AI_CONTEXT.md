@@ -1,7 +1,7 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
 > **Tạo lần đầu:** 2026-07-31
-> **Cập nhật gần nhất:** 2026-08-03 — Cải tiến đề TWO_PART: bỏ giới hạn 50 câu, chấm theo phần trăm, ẩn pass_score
+> **Cập nhật gần nhất:** 2026-08-14 — Thêm hướng dẫn triển khai & chạy trên Linux
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án.
 > **Quy ước:** Mỗi khi hoàn thành một task, cập nhật trạng thái mới nhất vào file này.
@@ -393,6 +393,61 @@ npm run migrate    # Chạy Prisma migrate an toàn
 npx prisma studio  # Mở Prisma Studio xem database
 npx tsx prisma/seed.ts  # Seed database (tạo tài khoản admin mặc định)
 ```
+
+### 6.1 Triển khai & chạy trên Linux 🐧
+
+> **Hệ thống hiện đang chạy trên Windows (PCC).** Khi triển khai lên server Linux, áp dụng các bước dưới đây. Chi tiết đầy đủ xem file `thipcsl/DEPLOY_LINUX.md` (nếu có) và `thipcsl/HUONG_DAN_DEPLOY_MAY_CHU_MOI.md`.
+
+**1. Yêu cầu:** Node.js 20+ (LTS), PostgreSQL 14+, Nginx (nếu cần reverse proxy).
+
+**2. Tạo database khớp `.env`** (web app nằm trong thư mục con `thipcsl/`):
+```bash
+sudo -u postgres psql <<'EOF'
+CREATE USER exam_admin WITH password '<DB_PASSWORD>';
+CREATE DATABASE exam_system OWNER exam_admin;
+GRANT ALL PRIVILEGES ON DATABASE exam_system TO exam_admin;
+ALTER USER exam_admin WITH CREATEDB;
+EOF
+```
+
+**3. Cài & đồng bộ schema:**
+```bash
+cd /opt/thipcsl/thipcsl        # web app thực nằm trong thư mục con
+npm install
+npx prisma generate
+npx prisma db push             # hoặc: npx prisma migrate deploy
+npx tsx prisma/seed.ts         # tạo admin mặc định
+npm run build                  # BẮT BUỘC pass, 0 lỗi TS
+npm start                      # chạy production, mặc định port 3000
+```
+
+**4. Chạy nền bằng systemd** (tự khởi động cùng máy):
+```ini
+# /etc/systemd/system/thipcsl.service
+[Service]
+User=thipcsl
+WorkingDirectory=/opt/thipcsl/thipcsl
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm start
+Restart=always
+[Install]
+WantedBy=multi-user.target
+```
+```bash
+sudo systemctl daemon-reload && sudo systemctl enable --now thipcsl
+```
+
+**5. Backup PostgreSQL trên Linux** — dùng script có sẵn:
+```bash
+chmod +x backup-database-deploy.sh
+./backup-database-deploy.sh    # tạo file .backup + .sql trong backups/
+```
+
+**6. Lưu ý quan trọng trên Linux:**
+- `.env` đang dùng `localhost:5432` — nếu PostgreSQL server khác máy, đổi `DATABASE_URL` cho đúng.
+- Đổi `JWT_SECRET` và mật khẩu DB mặc định trước khi đưa vào vận hành (xem `SECURITY_CHECKLIST.md`).
+- Tường lửa chỉ mở cổng 80/443; PostgreSQL (5432) không expose ra ngoài.
+- Backup tự động qua cron: `0 2 * * * cd /opt/thipcsl/thipcsl && ./backup-database-deploy.sh`
 
 ---
 
