@@ -1,7 +1,7 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
 > **Tạo lần đầu:** 2026-07-31
-> **Cập nhật gần nhất:** 2026-08-14 — Thêm hướng dẫn triển khai & chạy trên Linux
+> **Cập nhật gần nhất:** 2026-08-14 — Triển khai thử thành công trên Linux (Ubuntu): build 0 lỗi, admin đăng nhập OK
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.
 > **Mục đích:** File này là bộ nhớ cho các Agent AI (Claude, GPT) hiểu ngay lập tức ngữ cảnh dự án.
 > **Quy ước:** Mỗi khi hoàn thành một task, cập nhật trạng thái mới nhất vào file này.
@@ -448,6 +448,7 @@ chmod +x backup-database-deploy.sh
 - Đổi `JWT_SECRET` và mật khẩu DB mặc định trước khi đưa vào vận hành (xem `SECURITY_CHECKLIST.md`).
 - Tường lửa chỉ mở cổng 80/443; PostgreSQL (5432) không expose ra ngoài.
 - Backup tự động qua cron: `0 2 * * * cd /opt/thipcsl/thipcsl && ./backup-database-deploy.sh`
+- **Deploy thử đã kiểm chứng 2026-08-14** trên Ubuntu (Node v20.20.2): `npm run build` 0 lỗi, app chạy port 3000, seed tạo admin `admin/admin` (DB trống). Các lỗi hay gặp (EACCES build, `~` sai, shell thipcsl nằm ở home, 401 khi chưa seed) — chi tiết tại `thipcsl/DEPLOY_LINUX.md` mục 11.1.
 
 ---
 

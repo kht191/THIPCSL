@@ -277,6 +277,59 @@ sudo systemctl restart thipcsl                            # 6. Restart
 
 ---
 
+## 11.1 Ghi chú triển khai thực tế (đã kiểm chứng 2026-08-14)
+
+> Những ghi chú này dựa trên lần triển khai thật trên máy Ubuntu (`pcsl@pcsl-p10-laptop-02`, Node v20.20.2, npm 10.8.2). Bổ sung để đoán trước các lỗi hay gặp.
+
+### Môi trường đã xác nhận hoạt động
+- Node.js **v20.20.2**, npm **10.8.2** ✅
+- `npm install` → **443 packages** (~39s), 0 lỗi. Có cảnh báo `13 vulnerabilities (1 low, 2 moderate, 10 high)` — **KHÔNG chạy `npm audit fix --force`** (có thể phá phiên bản Next.js/Prisist hiện tại). Ghi nhận, xử lý riêng sau.
+- `npm run build` → **`✓ Compiled successfully` trong ~9s**, TypeScript 0 lỗi. ✅
+- Cảnh báo `The "middleware" file convention is deprecated. Please use "proxy" instead.` — **không phải lỗi**, app vẫn chạy. Next.js 16 đổi tên `middleware.ts` → `proxy.ts`. Để nguyên được hoặc đổi sau.
+- App chạy mặc định port **3000** (`http://localhost:3000`).
+
+### Các lỗi thường gặp khi deploy thật & cách xử lý
+
+| Lỗi | Nguyên nhân | Cách sửa |
+|:--|:--|:--|
+| `cd /opt/thipcsl/thipcsl: Permission denied` | Thư mục quyền `750`, user khác không vào được | `sudo chmod -R o+rX /opt/thipcsl` |
+| `EACCES: permission denied, mkdir '.../.next'` | `npm run build` chạy bằng user không phải chủ sở hữu app | Chạy bằng user app: `sudo -u thipcsl npm run build` |
+| `cd ~/opt/thipcsl` báo No such file | Dấu `~` trỏ về home user, **không phải `/opt`** | Dùng đường dẫn tuyệt đối `cd /opt/thipcsl/thipcsl` |
+| `ERR_MODULE_NOT_FOUND .../prisma/seed.ts` | Sau `sudo -u thipcsl -i`, shell nằm ở `/opt/thipcsl` (home), chưa vào thư mục app | Gõ `cd /opt/thipcsl/thipcsl` trước |
+| `sudo -u thipcsl whoami` ra `thipcsl` nhưng không "vào" user được | `thipcsl` là system account (shell `/usr/sbin/nologin`) — **không cần đăng nhập vào**, chỉ dùng `sudo -u thipcsl <lệnh>` hoặc `sudo -u thipcsl -i` | Dùng `sudo -u thipcsl -i` để mở phiên, hoặc đổi shell `sudo usermod -s /bin/bash thipcsl` |
+| Đăng nhập `/api/auth/login` báo `401 Sai tai khoan hoac mat khau` với user `admin/admin` | DB trống chưa seed, HOẶC user `admin` đã tồn tại với password khác (seed dùng `upsert update:{}` nên **không đổi password** cũ) | Chạy `npx tsx prisma/seed.ts` (DB trống mới có admin). Nếu có data cũ: đặt lại mật khẩu thủ công |
+
+### Luồng lệnh chuẩn đã chạy thành công (tóm tắt)
+```bash
+# 1. Phân quyền thư mục
+sudo chmod -R o+rX /opt/thipcsl
+
+# 2. Cài dependencies + build (bằng user app)
+cd /opt/thipcsl/thipcsl
+sudo -u thipcsl npm install
+sudo -u thipcsl -i          # bước tới shell thipcsl
+cd /opt/thipcsl/thipcsl     # THIẾT YẾU — shell thipcsl bắt đầu ở home /opt/thipcsl
+npx prisma generate
+npx prisma db push
+npx tsx prisma/seed.ts      # tạo 15 permissions + admin (admin/admin)
+npm run build
+
+# 3. Chạy app
+sudo -u thipcsl npm start   # port 3000
+
+# 4. Test đăng nhập
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}'
+```
+
+### 🔴 Bảo mật mặc định cần đổi
+- Tài khoản admin mặc định: **`admin` / `admin`** — rất dễ đoán. **PHẢI đổi ngay** trước khi đưa vào vận hành.
+- Database: user `exam_admin` / `exam_admin_2026` — đổi mật khẩu DB.
+- Xem [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md) Phần A & B trước khi mở ra mạng.
+
+---
+
 ## 12. 🔐 Checklist bảo mật trước vận hành
 
 - [ ] Đổi `JWT_SECRET` (không dùng mặc định)
