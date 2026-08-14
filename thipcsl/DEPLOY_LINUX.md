@@ -248,6 +248,62 @@ pg_restore -U exam_admin -h localhost -d exam_system -v backups/<FILE>.backup
 psql -U exam_admin -d exam_system -f backups/<FILE>.sql
 ```
 
+### 9.4. Chuyển database từ máy cũ (Windows) sang máy Linux mới 🔁
+
+> Khi setup máy Linux mới, DB thường đang trống (seed mới tạo chỉ có `admin`). Muốn mang **toàn bộ dữ liệu thật** từ máy Windows cũ sang, dùng `pg_dump` → chuyển file → `pg_restore`. **Không qua git.**
+
+#### Bước 1 — Tạo dump trên máy Windows (máy nguồn, có PostgreSQL chạy)
+
+```bat
+:: Mở PowerShell trên máy Windows, đặt biến mật khẩu rồi dump
+set PGPASSWORD=exam_admin_2026
+"C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -F c -b -v -f backups\exam_system.bak
+"C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -f backups\exam_system.sql
+```
+- `.bak` (Custom, nén) → dùng để restore nhanh.
+- `.sql` (Plain) → dễ đọc, dễ kiểm tra.
+- Đường dẫn PostgreSQL có thể khác (18 → 17, 16...) tùy bản cài.
+
+#### Bước 2 — Chuyển file sang máy Linux
+
+Nếu 2 máy thông mạng, trên máy Linux:
+```bash
+scp pcsl@<IP_MÁY_WINDOWS>:D:/path/to/exam_system.bak /tmp/
+```
+Hoặc dùng USB / WinSCP / FileZilla / Google Drive... theo điều kiện mạng. Đưa cả 2 file `.bak` và `.sql` vào `/tmp/` (hoặc thư mục bạn thích).
+
+#### Bước 3 — Restore trên máy Linux (đảm bảo app không đang chạy)
+
+```bash
+# 0. Dừng app nếu đang chạy
+# (nếu dùng npm start: Ctrl+C; nếu systemd: sudo systemctl stop thipcsl)
+
+# 1. Tạo lại database sạch (xóa DB trống đang có)
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS exam_system WITH (FORCE);"
+sudo -u postgres psql -c "CREATE DATABASE exam_system OWNER exam_admin;"
+
+# 2. Vào thư mục chứa file dump
+cd /tmp
+
+# 3a. Restore từ file Custom .bak (cờ --no-owner để né owner là user Windows)
+pg_restore -U exam_admin -h localhost -d exam_system --no-owner --role=exam_admin -v exam_system.bak
+
+# HOẶC 3b. Restore từ file .sql
+psql -U exam_admin -h localhost -d exam_system -f exam_system.sql
+```
+
+#### Bước 4 — Xác nhận dữ liệu đã vào
+
+```bash
+sudo -u postgres psql -d exam_system -c "SELECT username, role FROM \"User\" ORDER BY username LIMIT 10;"
+```
+→ Phải thấy danh sách user thật (không còn `0 rows`).
+
+> ⚠️ Lưu ý:
+> - Nếu máy mới đã có data khác cần giữ → **đừng** DROP, thay bằng tạo DB mới tên khác (vd `exam_system_new`) rồi đổi `DATABASE_URL`.
+> - Sau restore, khởi động lại app và **đăng nhập lần nữa** để xác nhận phân quyền/phiên hoạt động.
+> - Không chạy `prisma db push` / `migrate deploy` ngay sau restore nếu chưa cần — chúng có thể ghi đè schema.
+
 ---
 
 ## 10. Cập nhật bản mới (release)
