@@ -64,7 +64,7 @@ sudo adduser --system --group --home /opt/thipcsl thipcsl
 # Clone repo
 sudo mkdir -p /opt/thipcsl
 sudo chown -R thipcsl /opt/thipcsl
-sudo -u thipcsl git clone <REPO_URL> /opt/thipcsl
+sudo -u thipcsl git clone https://github.com/kht191/THIPCSL.git /opt/thipcsl
 
 # Vào thư mục app thực
 cd /opt/thipcsl/thipcsl
