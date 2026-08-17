@@ -23,9 +23,13 @@ export async function POST(request: Request) {
 
         const response = NextResponse.json({ success: true, user: { id: user.id, username: user.username, role: user.role } });
 
+        // Quyết định Secure theo giao thức thực (xuyên qua Nginx).
+        // Qua HTTP (test local) → không secure để cookie được gửi lại;
+        // qua HTTPS (Nginx) → secure true. Nginx phải set X-Forwarded-Proto.
+        const isHttps = request.headers.get('x-forwarded-proto') === 'https';
         response.cookies.set('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             maxAge: 60 * 60 * 24, // 1 day
             path: '/',
         });
