@@ -252,25 +252,29 @@ psql -U exam_admin -d exam_system -f backups/<FILE>.sql
 
 > Khi setup máy Linux mới, DB thường đang trống (seed mới tạo chỉ có `admin`). Muốn mang **toàn bộ dữ liệu thật** từ máy Windows cũ sang, dùng `pg_dump` → chuyển file → `pg_restore`. **Không qua git.**
 
+> 🔑 **Quy tắc version rất quan trọng:** file backup `.bak` (Custom, nén) **chỉ restore được nếu PostgreSQL hai máy CÙNG BẢN**. VD Windows cài **18**, Linux cài **16** → restore `.bak` lỗi `unsupported version (1.16) in file header`. Trong khi file `.sql` (Plain, text) restore được trên **mọi bản**. ⇒ **Luôn dump cả 2 file**, và nếu 2 bản không khớp thì **dùng file `.sql`**.
+> - Kiểm tra bản Linux: `psql --version` / `pg_restore --version`.
+
 #### Bước 1 — Tạo dump trên máy Windows (máy nguồn, có PostgreSQL chạy)
 
-```bat
-:: Mở PowerShell trên máy Windows, đặt biến mật khẩu rồi dump
-set PGPASSWORD=exam_admin_2026
-"C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -F c -b -v -f backups\exam_system.bak
-"C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -f backups\exam_system.sql
+> ⚠️ **Khi dùng PowerShell** (mặc định trong Windows Terminal): Gọi chương trình có đường dẫn cách nhau phải đặt dấu `&` đầu, và đặt mật khẩu bằng `$env:` — **không dùng `set`** (cú pháp củ của cmd sẽ báo `Unexpected token`).
+
+```powershell
+$env:PGPASSWORD="exam_admin_2026"
+& "C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -F c -b -v -f D:\exam_system.bak
+& "C:\Program Files\PostgreSQL\18\bin\pg_dump" -U exam_admin -h localhost -p 5432 -d exam_system -f D:\exam_system.sql
 ```
-- `.bak` (Custom, nén) → dùng để restore nhanh.
-- `.sql` (Plain) → dễ đọc, dễ kiểm tra.
-- Đường dẫn PostgreSQL có thể khác (18 → 17, 16...) tùy bản cài.
+- `.bak` (Custom, nén) → restore nhanh khi hai máy cùng bản.
+- `.sql` (Plain, text) → tương thích mọi bản, dễ đọc, dễ sửa. **Khuyến nghị dùng khi version khác nhau.**
+- Đường dẫn thư mục PostgreSQL có thể khác (18 → 17, 16...) tùy bản cài: kiểm tra bằng `dir "C:\Program Files\PostgreSQL"`. Đổi `D:\` thành USB nếu cần chuyển vật lý.
 
 #### Bước 2 — Chuyển file sang máy Linux
 
 Nếu 2 máy thông mạng, trên máy Linux:
 ```bash
-scp pcsl@<IP_MÁY_WINDOWS>:D:/path/to/exam_system.bak /tmp/
+scp pcsl@<IP_MÁY_WINDOWS>:D:/path/to/exam_system.sql /tmp/
 ```
-Hoặc dùng USB / WinSCP / FileZilla / Google Drive... theo điều kiện mạng. Đưa cả 2 file `.bak` và `.sql` vào `/tmp/` (hoặc thư mục bạn thích).
+Hoặc dùng USB / WinSCP / FileZilla / Google Drive... theo điều kiện mạng. Đưa ít nhất file `.sql` (và cả `.bak` nếu cùng bản) vào `/tmp/` (hoặc thư mục bạn thích).
 
 #### Bước 3 — Restore trên máy Linux (đảm bảo app không đang chạy)
 
@@ -284,13 +288,24 @@ sudo -u postgres psql -c "CREATE DATABASE exam_system OWNER exam_admin;"
 
 # 2. Vào thư mục chứa file dump
 cd /tmp
-
-# 3a. Restore từ file Custom .bak (cờ --no-owner để né owner là user Windows)
-pg_restore -U exam_admin -h localhost -d exam_system --no-owner --role=exam_admin -v exam_system.bak
-
-# HOẶC 3b. Restore từ file .sql
-psql -U exam_admin -h localhost -d exam_system -f exam_system.sql
 ```
+
+**Cách A — Cùng bản PostgreSQL (dùng `pg_restore` cho `.bak`):**
+```bash
+pg_restore -U exam_admin -h localhost -d exam_system --no-owner --role=exam_admin -v exam_system.bak
+```
+
+**Cách B — Version khác nhau (dùng `psql` cho `.sql`, khuyên dùng):**
+```bash
+# Trước khi restore, nếu file .sql vừa dump từ bản 18 mà máy Linux là 16,
+# phải comment bỏ tham số lạ "transaction_timeout" (PostgreSQL 16 chưa có):
+sed -i 's/^SET transaction_timeout = 0;/-- SET transaction_timeout (PostgreSQL 16 khong ho tro);/' exam_system.sql
+
+# Restore:
+psql -U exam_admin -h localhost -d exam_system -v ON_ERROR_STOP=1 -f exam_system.sql
+```
+- `-v ON_ERROR_STOP=1` → dừng ngay khi gặp lỗi, dễ phát hiện.
+- Lỗi cuối `ERROR: permission denied to change default privileges` ở câu `ALTER DEFAULT PRIVILEGES` là **vô hại** — user `exam_admin` không phải superuser nên chỉ không đặt được quyền mặc định; toàn bộ dữ liệu + quyền object hiện tại đã restore đầy đủ.
 
 #### Bước 4 — Xác nhận dữ liệu đã vào
 
@@ -299,10 +314,28 @@ sudo -u postgres psql -d exam_system -c "SELECT username, role FROM \"User\" ORD
 ```
 → Phải thấy danh sách user thật (không còn `0 rows`).
 
-> ⚠️ Lưu ý:
+#### Bước 5 — Đồng bộ schema nếu DB cũ hơn code (quan trọng nếu data từ máy Windows cũ)
+
+> Nếu DB máy Windows **cũ hơn** code trên Linux, app sẽ báo lỗi đăng nhập như:
+> `Invalid prisma.user.findUnique() invocation: The column User.permissionMode does not exist in the current database` (mã `P2022`).
+> Cách sửa: **giữ nguyên dữ liệu**, chỉ đồng bộ schema cho khớp code bằng Prisma:
+```bash
+cd /opt/thipcsl/thipcsl
+npx prisma generate
+npx prisma db push      # chỉ THÊM cột/thuộc tính/bảng còn thiếu, không xóa dữ liệu
+npx tsx prisma/seed.ts  # upsert: nạp permissions mới, KHÔNG đổi password admin cũ
+npm run build
+```
+
+#### Bước 6 — Lỗi đăng nhập treo khi truy cập HTTP (quan trọng khi test local)
+
+> Khi chạy `NODE_ENV=production` mà vào bằng `http://localhost:3000` (không HTTPS), login thành công nhưng bị **quay vòng về trang đăng nhập** ("treo"). Nguyên nhân: cookie token thường đặt cờ `secure: NODE_ENV==='production'` → cookie `Secure` **không được trình duyệt gửi lại qua HTTP**, nên middleware không thấy token → redirect vô hạn.
+> Cách xử lý: làm Secure theo giao thức thực (Nginx đã set `X-Forwarded-Proto`), xem [login/route.ts](thipcsl/app/api/auth/login/route.ts).
+
+> ⚠️ Lưu ý chung:
 > - Nếu máy mới đã có data khác cần giữ → **đừng** DROP, thay bằng tạo DB mới tên khác (vd `exam_system_new`) rồi đổi `DATABASE_URL`.
+> - `npx prisma db push` ở đây **an toàn** vì chỉ cần các thay đổi không-phá-dữ-liệu (thêm cột có default, thêm bảng). Nếu nó đòi reset thì dừng và xử lý thủ công.
 > - Sau restore, khởi động lại app và **đăng nhập lần nữa** để xác nhận phân quyền/phiên hoạt động.
-> - Không chạy `prisma db push` / `migrate deploy` ngay sau restore nếu chưa cần — chúng có thể ghi đè schema.
 
 ---
 
