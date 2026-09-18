@@ -10,17 +10,18 @@ export default function CreatePracticePage() {
     const [topics, setTopics] = useState<any[]>([]);
     const [matrix, setMatrix] = useState<{ parentId: string, counts: Record<string, number> }[]>([{ parentId: '', counts: {} }]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchTopics = async () => {
             try {
-                const res = await fetch('/api/admin/topics?activeOnly=true');
-                if (res.ok) {
-                    setTopics(await res.json());
-                }
+                const res = await fetch('/api/practice/topics');
+                if (!res.ok) throw new Error('Không thể tải chủ đề ôn tập. Vui lòng tải lại trang hoặc đăng nhập lại.');
+                setTopics(await res.json());
             } catch (error) {
                 console.error('Error fetching topics', error);
+                setLoadError(error instanceof Error ? error.message : 'Không thể tải chủ đề ôn tập. Vui lòng thử lại.');
             } finally {
                 setLoading(false);
             }
@@ -107,11 +108,13 @@ export default function CreatePracticePage() {
     const getChildren = (id: string) => topics.filter(t => t.parentId === id);
 
     if (loading) return <div className="p-8">Đang tải...</div>;
+    if (loadError) return <div role="alert" className="p-8 text-red-700">{loadError}</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-3xl mx-auto bg-white p-8 rounded shadow">
                 <h1 className="text-2xl font-bold mb-6 text-blue-800">Tạo đề ôn tập mới</h1>
+                {topics.length === 0 && <p role="status" className="mb-4 text-gray-700">Chưa có chủ đề ôn tập nào được mở. Vui lòng liên hệ quản trị viên.</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>

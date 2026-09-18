@@ -1,5 +1,13 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
+## Cập nhật 2026-09-18: Chủ đề ôn tập cho thí sinh
+
+- Sửa lỗi trang tạo/sửa đề ôn tập gọi API admin yêu cầu `topics.manage`, làm thí sinh nhận 403 và danh sách trống.
+- Thêm `GET /api/practice/topics`: xác thực bằng `getAuthUserId()`, chỉ trả id, tên, parentId và số câu hỏi của chủ đề đang bật; ẩn các nhánh có tổ tiên đã tắt.
+- Trang tạo/sửa đề dùng API mới, hiển thị lỗi tải dữ liệu và thông báo khi chưa có chủ đề mở. API quản trị giữ nguyên phân quyền.
+- Kiểm tra: production build thành công; kiểm thử route với mock xác thực/database cho 401, thí sinh truy cập, lọc cây chủ đề, danh sách rỗng và lỗi database.
+- Triển khai Linux: cập nhật nhánh master, chạy `npm run build` trong `thipcsl`, khởi động lại dịch vụ ứng dụng. Không cần migration database.
+
 > **Tạo lần đầu:** 2026-07-31
 > **Cập nhật gần nhất:** 2026-08-14 — Triển khai thử thành công trên Linux (Ubuntu): build 0 lỗi, admin đăng nhập OK
 > **Trạng thái:** ✅ Hoàn thiện 6/6 modules. Đang vận hành thực tế.

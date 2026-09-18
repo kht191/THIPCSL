@@ -13,6 +13,7 @@ export default function EditPracticePage() {
     const [topics, setTopics] = useState<any[]>([]);
     const [matrix, setMatrix] = useState<{ parentId: string, counts: Record<string, number> }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     // Official exam tracking
@@ -25,12 +26,10 @@ export default function EditPracticePage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const topicsRes = await fetch('/api/admin/topics?activeOnly=true');
-                let loadedTopics: any[] = [];
-                if (topicsRes.ok) {
-                    loadedTopics = await topicsRes.json();
-                    setTopics(loadedTopics);
-                }
+                const topicsRes = await fetch('/api/practice/topics');
+                if (!topicsRes.ok) throw new Error('Không thể tải chủ đề ôn tập. Vui lòng tải lại trang hoặc đăng nhập lại.');
+                const loadedTopics: any[] = await topicsRes.json();
+                setTopics(loadedTopics);
 
                 const examRes = await fetch(`/api/practice/${id}`);
                 if (examRes.ok) {
@@ -95,6 +94,7 @@ export default function EditPracticePage() {
                 }
             } catch (error) {
                 console.error('Error fetching data', error);
+                setLoadError(error instanceof Error ? error.message : 'Không thể tải dữ liệu ôn tập. Vui lòng thử lại.');
             } finally {
                 setLoading(false);
             }
@@ -222,6 +222,7 @@ export default function EditPracticePage() {
     const getChildren = (id: string) => topics.filter((t: any) => t.parentId === id);
 
     if (loading) return <div className="p-8">Đang tải...</div>;
+    if (loadError) return <div role="alert" className="p-8 text-red-700">{loadError}</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
@@ -255,6 +256,7 @@ export default function EditPracticePage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {topics.length === 0 && <p role="status" className="text-gray-700">Chưa có chủ đề ôn tập nào được mở. Vui lòng liên hệ quản trị viên.</p>}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tên đề ôn tập</label>
                         <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
