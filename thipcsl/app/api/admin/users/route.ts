@@ -12,8 +12,18 @@ export async function GET(request: Request) {
         const search = searchParams.get('search')?.trim();
         const department = searchParams.get('department');
         const field = searchParams.get('field');
+        const role = searchParams.get('role');
+        const active = searchParams.get('is_active');
+        if (role && !['ADMIN', 'PROCTOR', 'CANDIDATE'].includes(role)) {
+            return NextResponse.json({ error: 'Vai trò không hợp lệ' }, { status: 400 });
+        }
+        if (active && !['true', 'false'].includes(active)) {
+            return NextResponse.json({ error: 'Trạng thái tài khoản không hợp lệ' }, { status: 400 });
+        }
 
         const where: any = {};
+        if (role) where.role = role;
+        if (active) where.is_active = active === 'true';
 
         if (search) {
             where.OR = [

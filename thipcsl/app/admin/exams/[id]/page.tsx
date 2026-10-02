@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
+import ExamParticipants from '@/components/ExamParticipants';
 
 export default function EditExam({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -69,10 +70,8 @@ export default function EditExam({ params }: { params: Promise<{ id: string }> }
                             setPart2PassPercent(cfg.part2PassPercent || 70);
                             setPart1Total((cfg.part1QuestionIds || []).length);
                             setPart2Total((cfg.part2QuestionIds || []).length);
-                            setRegenerateQuestions(true);
                         } else if (settings.matrix) {
                             setMatrix(settings.matrix);
-                            setRegenerateQuestions(true);
                         }
                     } catch { }
                 }
@@ -353,6 +352,7 @@ export default function EditExam({ params }: { params: Promise<{ id: string }> }
                 </div>
 
                 {/* Users */}
+                <ExamParticipants examId={id} users={users} selectedIds={selectedUsers} />
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold text-gray-800">Phân quyền thi ({selectedUsers.length} người)</h2>
                     <div className="flex flex-wrap gap-3 items-center">

@@ -7,9 +7,11 @@ export async function GET(request: Request) {
     try {
         const userIdOrErr = await requirePermission('monitor.view');
         if (typeof userIdOrErr !== 'string') return userIdOrErr;
+        const examId = new URL(request.url).searchParams.get('examId');
         const results = await prisma.result.findMany({
             where: {
-                status: 'IN_PROGRESS'
+                status: 'IN_PROGRESS',
+                ...(examId ? { exam_id: examId } : {}),
             },
             include: {
                 user: {

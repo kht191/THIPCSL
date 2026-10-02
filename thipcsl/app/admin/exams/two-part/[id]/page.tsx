@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
+import ExamParticipants from '@/components/ExamParticipants';
 
 export default function EditTwoPartExam({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -432,6 +433,7 @@ export default function EditTwoPartExam({ params }: { params: Promise<{ id: stri
                 </div>
 
                 {/* Users */}
+                <ExamParticipants examId={id} users={users} selectedIds={selectedUsers} />
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold text-gray-800">Phân quyền thi ({selectedUsers.length} người được chọn)</h2>
                     <div className="flex flex-wrap gap-3 items-center">

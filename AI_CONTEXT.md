@@ -1,5 +1,13 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
+## Cập nhật 2026-10-02: Lọc nhân viên và danh sách thí sinh trong đề
+
+- Quản lý nhân viên thêm lọc vai trò và trạng thái tài khoản; API `/api/admin/users` hỗ trợ `role` và `is_active=true|false`, kết hợp với bộ lọc cũ và phân trang.
+- Trang sửa đề không tự bật “Tạo lại câu hỏi” khi tải ma trận đã lưu. Cả hai trang sửa đề đều mặc định không tích.
+- Component `ExamParticipants` trên cả trang sửa đề thường và hai phần: danh sách thí sinh đang chọn (lưu khi bấm Cập nhật) và danh sách bài đang diễn ra, làm mới mỗi 10 giây.
+- API giám sát hỗ trợ `examId`, giữ quyền `monitor.view`; liên kết chi tiết yêu cầu `monitor.answers`.
+- Kiểm tra production build và 6 ca kiểm thử trong `tests/monitor-permissions.cjs` thành công. Không đổi schema database.
+
 ## Cập nhật 2026-10-02: Phân quyền giám sát bài làm
 
 - `monitor.view`: xem danh sách và tiến độ; `monitor.answers`: xem đáp án thí sinh đang chọn. Muốn mở chi tiết giám sát cần cả hai quyền, không cần `results.view`.

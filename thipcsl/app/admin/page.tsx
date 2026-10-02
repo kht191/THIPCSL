@@ -16,6 +16,8 @@ export default function UserManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [department, setDepartment] = useState('');
     const [field, setField] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
+    const [activeFilter, setActiveFilter] = useState('');
 
     // Options for dropdowns
     const [departments, setDepartments] = useState<string[]>([]);
@@ -60,7 +62,7 @@ export default function UserManagement() {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, department, field, limit]);
+    }, [searchTerm, department, field, roleFilter, activeFilter, limit]);
 
     useEffect(() => {
         fetchUsers(page);
@@ -85,6 +87,8 @@ export default function UserManagement() {
         if (searchTerm) params.append('search', searchTerm);
         if (department) params.append('department', department);
         if (field) params.append('field', field);
+        if (roleFilter) params.append('role', roleFilter);
+        if (activeFilter) params.append('is_active', activeFilter);
         params.append('page', currentPage.toString());
         params.append('limit', limit.toString());
 
@@ -413,6 +417,23 @@ export default function UserManagement() {
                         ))}
                     </select>
                 </div>
+                <div className="w-48">
+                    <label htmlFor="role-filter" className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+                    <select id="role-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="w-full border border-gray-300 rounded p-2 text-black">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="ADMIN">Quản trị viên</option>
+                        <option value="PROCTOR">Giám thị</option>
+                        <option value="CANDIDATE">Thí sinh</option>
+                    </select>
+                </div>
+                <div className="w-48">
+                    <label htmlFor="active-filter" className="block text-sm font-medium text-gray-700 mb-1">Trạng thái tài khoản</label>
+                    <select id="active-filter" value={activeFilter} onChange={e => setActiveFilter(e.target.value)} className="w-full border border-gray-300 rounded p-2 text-black">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Đã khóa</option>
+                    </select>
+                </div>
                 <div className="w-32">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Hiển thị</label>
                     <select
@@ -428,7 +449,7 @@ export default function UserManagement() {
                     </select>
                 </div>
                 <button
-                    onClick={() => { setSearchTerm(''); setDepartment(''); setField(''); }}
+                    onClick={() => { setSearchTerm(''); setDepartment(''); setField(''); setRoleFilter(''); setActiveFilter(''); }}
                     className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 h-10"
                 >
                     Xóa lọc

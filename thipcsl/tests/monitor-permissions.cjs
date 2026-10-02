@@ -19,6 +19,50 @@ function load(file, mocks) {
 }
 const response = { NextResponse: { json: (body, options) => ({ body, status: options?.status || 200 }) } };
 
+test('user filters combine role/status with search and share the same paginated count', async () => {
+    const queries = [];
+    const api = load('app/api/admin/users/route.ts', {
+        'next/server': response,
+        '@/lib/auth': {},
+        '@/lib/permissions': { requirePermission: async () => 'admin' },
+        '@/lib/prisma': { prisma: { user: {
+            findMany: async args => { queries.push(args); return []; },
+            count: async args => { queries.push(args); return 0; },
+        } } },
+    });
+    const result = await api.GET({ url: 'http://localhost/api/admin/users?role=PROCTOR&is_active=false&department=IT&search=Lan&page=2&limit=10' });
+    assert.equal(result.status, 200);
+    assert.equal(queries[0].where.role, 'PROCTOR');
+    assert.equal(queries[0].where.is_active, false);
+    assert.equal(queries[0].where.department, 'IT');
+    assert.equal(queries[0].where.OR[1].full_name.contains, 'Lan');
+    assert.equal(queries[0].skip, 10);
+    assert.deepEqual(queries[0].where, queries[1].where);
+    queries.length = 0;
+    await api.GET({ url: 'http://localhost/api/admin/users' });
+    assert.deepEqual(queries[0].where, {});
+    assert.equal((await api.GET({ url: 'http://localhost/api/admin/users?is_active=invalid' })).status, 400);
+});
+
+test('monitor filters by exam before reading data and ignores cleared answers', async () => {
+    let where;
+    const api = load('app/api/admin/monitor/route.ts', {
+        'next/server': response,
+        '@/lib/permissions': { requirePermission: async () => 'admin' },
+        '@/lib/exam-helper': { autoSubmitExam: async () => assert.fail('Unexpired attempt must not be submitted') },
+        '@/lib/prisma': { prisma: { result: { findMany: async args => {
+            where = args.where;
+            return [{ id: 'r', started_at: new Date(), exam: { duration: 30, question_ids: '["q1","q2"]' },
+                details: '{"questionOrder":["q1","q2"],"answers":{"q1":["A"],"q2":[]}}' }];
+        } } } },
+    });
+    const result = await api.GET({ url: 'http://localhost/api/admin/monitor?examId=exam-one' });
+    assert.deepEqual(where, { status: 'IN_PROGRESS', exam_id: 'exam-one' });
+    assert.deepEqual(result.body[0].progress, { answered: 1, total: 2 });
+    await api.GET({ url: 'http://localhost/api/admin/monitor' });
+    assert.deepEqual(where, { status: 'IN_PROGRESS' });
+});
+
 test('ADMIN has all permissions even in CUSTOM mode; other roles keep explicit restrictions', async () => {
     let user = { role: 'ADMIN', permissionMode: 'CUSTOM', userPermissions: [] };
     const api = load('lib/permissions.ts', {
