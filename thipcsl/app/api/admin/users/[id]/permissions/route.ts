@@ -14,12 +14,13 @@ export async function GET(
 
     try {
         const permissionKeys = await getUserPermissions(id);
-        const userWithMode = await prisma.user.findUnique({ where: { id }, select: { permissionMode: true } });
-        const explicit = userWithMode?.permissionMode === 'CUSTOM';
+        const userWithMode = await prisma.user.findUnique({ where: { id }, select: { permissionMode: true, role: true } });
+        const explicit = userWithMode?.role !== 'ADMIN' && userWithMode?.permissionMode === 'CUSTOM';
 
         return NextResponse.json({
             permissionKeys,
             hasExplicitPermissions: explicit,
+            isAdmin: userWithMode?.role === 'ADMIN',
         });
     } catch (error) {
         console.error('[GET permissions] Error:', error);
@@ -40,6 +41,13 @@ export async function PUT(
     try {
         const body = await request.json();
         const { permissionKeys, restoreRole } = body;
+
+        const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+        if (!target) return NextResponse.json({ error: 'Không tìm thấy người dùng' }, { status: 404 });
+        if (target.role === 'ADMIN') {
+            return NextResponse.json({ success: true, permissionKeys: ROLE_DEFAULT_PERMISSIONS.ADMIN,
+                hasExplicitPermissions: false, message: 'Tài khoản quản trị luôn có đầy đủ quyền' });
+        }
 
         if (restoreRole) {
             // Clear all explicit permissions → fall back to role defaults
@@ -62,7 +70,7 @@ export async function PUT(
         return NextResponse.json({
             success: true,
             permissionKeys,
-            hasExplicitPermissions: permissionKeys.length > 0,
+            hasExplicitPermissions: true,
             message: 'Đã lưu quyền thành công',
         });
     } catch (error) {

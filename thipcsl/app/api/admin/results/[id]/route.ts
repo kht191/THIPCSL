@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requirePermission } from '@/lib/permissions';
+import { requirePermission, hasPermission } from '@/lib/permissions';
 
 export async function GET(
     request: Request,
@@ -28,6 +28,9 @@ export async function GET(
 
         if (!result) {
             return NextResponse.json({ error: 'Result not found' }, { status: 404 });
+        }
+        if (result.status === 'IN_PROGRESS' && !(await hasPermission(userIdOrErr, 'monitor.answers'))) {
+            return NextResponse.json({ error: 'Bạn chưa được cấp quyền xem đáp án đang làm của thí sinh' }, { status: 403 });
         }
 
         // Fetch questions to display details

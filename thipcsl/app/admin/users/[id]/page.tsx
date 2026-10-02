@@ -55,6 +55,7 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
     const [permSearch, setPermSearch] = useState('');
     const [savingPermissions, setSavingPermissions] = useState(false);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+    const [permissionsReadOnly, setPermissionsReadOnly] = useState(false);
 
     // Permission definitions (mirrored from lib for client)
     const PERM_GROUPS = [
@@ -86,7 +87,8 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
         {
             name: 'Giám sát & Kết quả',
             perms: [
-                { key: 'monitor.view', name: 'Xem giám sát thi' },
+                { key: 'monitor.view', name: 'Xem giám sát và tiến độ làm bài' },
+                { key: 'monitor.answers', name: 'Xem đáp án đang làm của thí sinh' },
                 { key: 'results.view', name: 'Xem kết quả thi' },
                 { key: 'results.print_export', name: 'In/Xuất kết quả' },
                 { key: 'exam.unlock', name: 'Mở khóa bài thi' },
@@ -107,6 +109,7 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                 const data = await res.json();
                 setPermissionKeys(data.permissionKeys || []);
                 setHasExplicitPermissions(data.hasExplicitPermissions);
+                setPermissionsReadOnly(data.isAdmin === true);
             }
         } catch (error) {
             console.error('Error fetching permissions', error);
@@ -160,6 +163,7 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
             if (res.ok) {
                 const data = await res.json();
                 setHasExplicitPermissions(data.hasExplicitPermissions);
+                setPermissionKeys(data.permissionKeys);
                 alert(data.message || 'Đã lưu quyền thành công');
             } else {
                 alert('Lỗi khi lưu quyền');
@@ -488,6 +492,9 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                             <div className="text-center py-8 text-gray-500">Đang tải...</div>
                         ) : (
                             <>
+                                {permissionsReadOnly && <p className="mb-4 text-blue-700">Tài khoản quản trị luôn có đầy đủ quyền, không cần tích chọn riêng.</p>}
+                                <p className="mb-4 text-sm text-gray-600">Để xem đáp án đang làm, chọn cả “Xem giám sát và tiến độ làm bài” và “Xem đáp án đang làm của thí sinh”.</p>
+                                <fieldset disabled={permissionsReadOnly}>
                                 <div className="flex flex-wrap items-center gap-3 mb-4">
                                     <input
                                         type="text"
@@ -569,6 +576,7 @@ export default function EditUser({ params }: { params: Promise<{ id: string }> }
                                         {savingPermissions ? 'Đang lưu...' : '💾 Lưu quyền'}
                                     </button>
                                 </div>
+                                </fieldset>
                             </>
                         )}
                     </div>

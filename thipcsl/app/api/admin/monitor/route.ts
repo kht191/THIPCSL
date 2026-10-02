@@ -77,7 +77,9 @@ export async function GET(request: Request) {
                 const details = JSON.parse(r.details);
                 // Check if answers are nested in 'answers' property (new format) or direct (old format)
                 const answers = details.answers || details;
-                answeredCount = Object.keys(answers).length;
+                const questionIds: string[] = Array.isArray(details.questionOrder)
+                    ? details.questionOrder : JSON.parse(r.exam.question_ids);
+                answeredCount = questionIds.filter(id => answers[id]?.length > 0).length;
             } catch (e) { }
 
             return {

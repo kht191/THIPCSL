@@ -9,6 +9,7 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
     const [data, setData] = useState<any>(null);
     const [viewerRole, setViewerRole] = useState<string>('');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [lastUpdated, setLastUpdated] = useState(new Date());
 
     useEffect(() => {
@@ -19,15 +20,22 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
 
     const fetchData = async () => {
         try {
-            const res = await fetch(`/api/admin/results/${id}`);
+            const res = await fetch(`/api/admin/monitor/${id}`);
             if (res.ok) {
                 const json = await res.json();
                 setData(json);
+                setError('');
                 if (json.viewerRole) setViewerRole(json.viewerRole);
                 setLastUpdated(new Date());
+            } else {
+                const json = await res.json();
+                setData(null);
+                setError(json.error || 'Không thể tải chi tiết giám sát');
             }
         } catch (error) {
             console.error('Error', error);
+            setData(null);
+            setError('Không thể kết nối. Vui lòng tải lại trang.');
         } finally {
             setLoading(false);
         }
@@ -50,12 +58,13 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
     };
 
     if (loading && !data) return <div className="p-8">Đang tải dữ liệu...</div>;
+    if (error) return <div role="alert" className="p-8 text-red-700">{error}</div>;
     if (!data) return <div className="p-8">Không tìm thấy dữ liệu</div>;
 
     const { result, questions } = data;
     const details = JSON.parse(result.details || '{}');
     const userAnswers = details.answers || details;
-    const answeredCount = Object.keys(userAnswers).length;
+    const answeredCount = questions.filter((q: { id: string }) => userAnswers[q.id]?.length > 0).length;
     const totalQuestions = questions.length;
     const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
@@ -154,12 +163,12 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
                                             <span className="px-3 py-1 rounded-full text-sm font-bold bg-red-600 text-white block text-center mb-2">
                                                 ĐANG BỊ KHÓA
                                             </span>
-                                            <button
+                                            {data.canUnlock && <button
                                                 onClick={handleUnlock}
                                                 className="w-full bg-blue-600 text-white py-1 rounded hover:bg-blue-700 text-sm font-bold"
                                             >
                                                 Mở khóa
-                                            </button>
+                                            </button>}
                                         </div>
                                     )}
                                 </div>
@@ -174,7 +183,7 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
                             {questions.map((q: any, index: number) => {
                                 let opts: any = {};
                                 try { opts = normalizeOptions(JSON.parse(q.options)); } catch (e) { opts = {}; }
-                                const userAnswer = userAnswers[q.id] || [];
+                                const userAnswer = parseCorrectAnswerValue(userAnswers[q.id]);
                                 const correctAns = parseCorrectAnswerValue(q.correct_answer);
                                 const isAdmin = viewerRole === 'ADMIN';
                                 const qPart = partMap[q.id];
@@ -262,7 +271,7 @@ export default function MonitorDetail({ params }: { params: Promise<{ id: string
 
                         <div className="grid grid-cols-5 gap-2">
                             {questions.map((q: any, index: number) => {
-                                const userAnswer = userAnswers[q.id] || [];
+                                const userAnswer = parseCorrectAnswerValue(userAnswers[q.id]);
                                 const isAnswered = userAnswer.length > 0;
                                 const isAdmin = viewerRole === 'ADMIN';
 

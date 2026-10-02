@@ -1,5 +1,14 @@
 # THÔNG TIN DỰ ÁN & BỘ NHỚ AI — THIPCSL
 
+## Cập nhật 2026-10-02: Phân quyền giám sát bài làm
+
+- `monitor.view`: xem danh sách và tiến độ; `monitor.answers`: xem đáp án thí sinh đang chọn. Muốn mở chi tiết giám sát cần cả hai quyền, không cần `results.view`.
+- ADMIN luôn có toàn bộ quyền, kể cả bản ghi cũ đang ở CUSTOM. Tab phân quyền của ADMIN hiển thị toàn bộ quyền và không cho bỏ chọn. PROCTOR ở chế độ ROLE mặc định có hai quyền giám sát; CUSTOM phải tích quyền tương ứng.
+- API `/api/admin/monitor/[id]` lấy vai trò thật từ database; chỉ ADMIN được nhận đáp án đúng trong API này. Không trả session token. API kết quả cũ cũng kiểm tra `monitor.answers` nếu bài đang làm.
+- Khi lưu quyền, tự upsert định nghĩa được chọn để quyền mới hoạt động trên database đang có, không cần chạy seed tài khoản hoặc migration schema.
+- Số câu đã làm bỏ qua đáp án rỗng. Trang giám sát hiển thị lỗi thiếu quyền rõ ràng.
+- Kiểm tra: `node --test tests/monitor-permissions.cjs` (4 ca với mock database) và `npm run build`.
+
 ## Cập nhật 2026-09-18: Chủ đề ôn tập cho thí sinh
 
 - Sửa lỗi trang tạo/sửa đề ôn tập gọi API admin yêu cầu `topics.manage`, làm thí sinh nhận 403 và danh sách trống.

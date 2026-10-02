@@ -21,7 +21,8 @@ export const PERMISSION_DEFINITIONS = [
   { key: 'exams.manage',       name: 'Quản lý đề thi',              group: 'Đề thi & Ca thi',  description: 'Tạo, sửa, xóa đề thi, cấu hình ma trận, phân quyền thi' },
   { key: 'sessions.manage',    name: 'Quản lý ca thi',              group: 'Đề thi & Ca thi',  description: 'Tạo, sửa, xóa ca thi, gán đề thi vào ca' },
   // Nhóm: Giám sát & Kết quả
-  { key: 'monitor.view',       name: 'Xem giám sát thi',            group: 'Giám sát & Kết quả', description: 'Xem danh sách thí sinh đang làm bài real-time' },
+  { key: 'monitor.view',       name: 'Xem giám sát và tiến độ làm bài', group: 'Giám sát & Kết quả', description: 'Xem danh sách thí sinh và số câu đã làm' },
+  { key: 'monitor.answers',    name: 'Xem đáp án đang làm của thí sinh', group: 'Giám sát & Kết quả', description: 'Xem chi tiết lựa chọn của thí sinh khi giám sát' },
   { key: 'results.view',       name: 'Xem kết quả thi',             group: 'Giám sát & Kết quả', description: 'Xem danh sách và chi tiết kết quả thi' },
   { key: 'results.print_export', name: 'In/Xuất kết quả',           group: 'Giám sát & Kết quả', description: 'In phiếu điểm và xuất danh sách kết quả ra Excel' },
   { key: 'exam.unlock',        name: 'Mở khóa bài thi',             group: 'Giám sát & Kết quả', description: 'Mở khóa bài thi cho thí sinh bị khóa do vi phạm' },
@@ -41,6 +42,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
   ADMIN: PERMISSION_DEFINITIONS.map(p => p.key),
   PROCTOR: [
     'monitor.view',
+    'monitor.answers',
     'results.view',
     'results.print_export',
     'exam.unlock',
@@ -71,6 +73,7 @@ export async function hasPermission(userId: string, permissionKey: string): Prom
   });
 
   if (!userWithPerms) return false;
+  if (userWithPerms.role === 'ADMIN') return ROLE_DEFAULT_PERMISSIONS.ADMIN.includes(permissionKey);
 
   // CUSTOM mode: use explicit permissions (may be empty — means no permissions)
   if (userWithPerms.permissionMode === 'CUSTOM') {
@@ -100,6 +103,7 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
   });
 
   if (!userWithPerms) return [];
+  if (userWithPerms.role === 'ADMIN') return ROLE_DEFAULT_PERMISSIONS.ADMIN;
 
   // CUSTOM mode: use explicit permissions (may be empty)
   if (userWithPerms.permissionMode === 'CUSTOM') {
@@ -124,6 +128,14 @@ export async function hasExplicitPermissions(userId: string): Promise<boolean> {
  * Set (replace) all permissions for a user.
  */
 export async function setUserPermissions(userId: string, permissionKeys: string[]): Promise<void> {
+  // Register selected definitions on existing installations without reseeding users.
+  for (const def of PERMISSION_DEFINITIONS.filter(p => permissionKeys.includes(p.key))) {
+    await prisma.permission.upsert({
+      where: { key: def.key },
+      update: { name: def.name, group_name: def.group, description: def.description },
+      create: { key: def.key, name: def.name, group_name: def.group, description: def.description },
+    });
+  }
   const permissions = await prisma.permission.findMany({
     where: { key: { in: permissionKeys } },
   });

@@ -6,6 +6,8 @@ export default function ExamMonitor() {
     const [data, setData] = useState<any[]>([]);
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [permissions, setPermissions] = useState<string[]>([]);
+    const [error, setError] = useState('');
     const [lastUpdated, setLastUpdated] = useState(new Date());
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSessionId, setFilterSessionId] = useState('');
@@ -13,6 +15,7 @@ export default function ExamMonitor() {
     useEffect(() => {
         fetchData();
         fetchSessions();
+        fetch('/api/auth/me').then(res => res.json()).then(user => setPermissions(user.permissions || [])).catch(console.error);
         const interval = setInterval(fetchData, 10000); // Poll every 10s
         return () => clearInterval(interval);
     }, []);
@@ -22,7 +25,11 @@ export default function ExamMonitor() {
             const res = await fetch('/api/admin/monitor');
             if (res.ok) {
                 setData(await res.json());
+                setError('');
                 setLastUpdated(new Date());
+            } else {
+                setData([]);
+                setError('Không thể tải giám sát. Vui lòng kiểm tra quyền xem giám sát và tiến độ làm bài.');
             }
         } catch (error) {
             console.error('Error fetching monitor data', error);
@@ -155,7 +162,7 @@ export default function ExamMonitor() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        {item.isLocked && (
+                                        {item.isLocked && permissions.includes('exam.unlock') && (
                                             <button
                                                 onClick={() => handleUnlock(item.id)}
                                                 className="text-red-600 hover:text-red-900 font-bold"
@@ -163,9 +170,9 @@ export default function ExamMonitor() {
                                                 Mở khóa
                                             </button>
                                         )}
-                                        <a href={`/admin/monitor/${item.id}`} className="text-blue-600 hover:text-blue-900">
+                                        {permissions.includes('monitor.answers') && <a href={`/admin/monitor/${item.id}`} className="text-blue-600 hover:text-blue-900">
                                             Chi tiết
-                                        </a>
+                                        </a>}
                                     </td>
                                 </tr>
                             );
@@ -174,7 +181,7 @@ export default function ExamMonitor() {
                 </table>
                 {filteredData.length === 0 && (
                     <div className="p-8 text-center text-gray-500">
-                        {data.length === 0 ? "Hiện không có thí sinh nào đang làm bài." : "Không tìm thấy thí sinh phù hợp với bộ lọc."}
+                        {error || (data.length === 0 ? "Hiện không có thí sinh nào đang làm bài." : "Không tìm thấy thí sinh phù hợp với bộ lọc.")}
                     </div>
                 )}
             </div>
